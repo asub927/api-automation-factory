@@ -17,6 +17,12 @@ const server = http.createServer(async (req, res) => {
 
   const orderMatch = /^\/orders\/([^/]+)$/.exec(url.pathname);
   if (req.method === "GET" && orderMatch) {
+    const auth = req.headers.authorization ?? "";
+    if (!auth.startsWith("Bearer ") || auth.slice(7).trim() === "") {
+      res.writeHead(401, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "unauthorized" }));
+      return;
+    }
     const order = orders[orderMatch[1]];
     if (!order) {
       res.writeHead(404, { "content-type": "application/json" });

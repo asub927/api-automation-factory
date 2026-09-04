@@ -19,10 +19,19 @@ export function assertNoSecretsInGenerated(content: string, filePath: string): v
   }
 }
 
+function isRolloutExcluded(cap: Capability, ir: CoverageIr): boolean {
+  return ir.intentionallyUncovered.some(
+    (u) =>
+      u.toolName === cap.toolName && u.reason !== "mutation-not-allowlisted",
+  );
+}
+
 function shouldEmitLiveMcp(cap: Capability, ir: CoverageIr): boolean {
-  if (cap.mutationClass === "read") return true;
+  // Mutation fail-closed: non-allowlisted mutators are not invoked live (AE7).
+  // Rollout exclusions still receive MCP-floor propose coverage (KD7 / demo DoD).
   return !ir.intentionallyUncovered.some(
-    (u) => u.toolName === cap.toolName && u.reason === "mutation-not-allowlisted",
+    (u) =>
+      u.toolName === cap.toolName && u.reason === "mutation-not-allowlisted",
   );
 }
 
@@ -32,7 +41,9 @@ export function emitHttpSuites(ir: CoverageIr, outDir: string): string[] {
   mkdirSync(outDir, { recursive: true });
 
   const written: string[] = [];
-  for (const cap of ir.capabilities.filter((c) => c.httpMapped)) {
+  for (const cap of ir.capabilities.filter(
+    (c) => c.httpMapped && !isRolloutExcluded(c, ir),
+  )) {
     const file = join(outDir, `${cap.toolName}.generated.spec.ts`);
     const content = `${BANNER}import { test, expect } from "@playwright/test";
 import { ${cap.toolName}ResponseSchema } from "../schemas/${cap.toolName}.schema.js";

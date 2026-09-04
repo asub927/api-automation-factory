@@ -1,1 +1,3 @@
-exclusions: []
+exclusions:
+  - toolName: listRecentOrders
+    reason: rollout-excluded-kd7-mcp-only-proof

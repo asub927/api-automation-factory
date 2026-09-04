@@ -20,6 +20,8 @@ describe("propose PR body", () => {
     );
     expect(body).toContain("## Drift");
     expect(body).toContain("## Uncovered");
+    expect(body).toContain("## Intentionally uncovered");
+    expect(body).toContain("listRecentOrders");
     expect(body).toMatch(/never auto-merged/i);
   });
 });

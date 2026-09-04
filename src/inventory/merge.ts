@@ -52,17 +52,18 @@ export function mergeInventory(input: MergeInputs): CoverageIr {
   for (const m of mappings) {
     const tool = input.mcp.tools.find((t) => t.name === m.toolName)!;
     const mutationClass = classifyMutation(tool);
+    const excluded = exclusions.has(tool.name);
 
-    if (exclusions.has(tool.name)) {
+    // Exclusions remove the tool from R6 rollout completeness but keep MCP-floor
+    // propose coverage (KD7 / demo DoD). Mutating tools without allowlist are
+    // intentionally uncovered and not invoked live.
+    if (excluded) {
       intentionallyUncovered.push({
         kind: "intentionally-uncovered",
         toolName: tool.name,
         reason: exclusions.get(tool.name) ?? "excluded",
       });
-      continue;
-    }
-
-    if (mutationClass !== "read" && !allowlist.has(tool.name)) {
+    } else if (mutationClass !== "read" && !allowlist.has(tool.name)) {
       intentionallyUncovered.push({
         kind: "intentionally-uncovered",
         toolName: tool.name,
@@ -80,7 +81,7 @@ export function mergeInventory(input: MergeInputs): CoverageIr {
       });
     }
 
-    if (!m.httpMapped) {
+    if (!m.httpMapped && !excluded) {
       uncovered.push({
         kind: "unmapped",
         toolName: tool.name,

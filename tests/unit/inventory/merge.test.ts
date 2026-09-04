@@ -32,7 +32,28 @@ describe("inventory merge", () => {
     expect(ir.version).toBe("coverage-ir/v1");
   });
 
-  it("keeps unmapped MCP tool on coverage floor (AE2/AE5)", () => {
+  it("keeps unmapped MCP tool on coverage floor when not excluded (AE2/AE5)", () => {
+    const mcp = ingestMcp(join(root, "contracts/demo/mcp-tools.json"));
+    const openApi = ingestOpenApi({
+      mode: "lockfile",
+      path: join(root, "contracts/demo/openapi.yaml"),
+    });
+    const ir = mergeInventory({
+      serviceId: "demo",
+      mcp,
+      openApi,
+      mappingPath: join(root, "support/mappings/demo.yaml"),
+      // no exclusionPath — AE5 uncovered list path
+      allowlistPath: join(root, "support/allowlists/demo.yaml"),
+    });
+
+    const recent = ir.capabilities.find((c) => c.toolName === "listRecentOrders");
+    expect(recent).toBeTruthy();
+    expect(recent?.httpMapped).toBe(false);
+    expect(ir.uncovered.some((u) => u.toolName === "listRecentOrders")).toBe(true);
+  });
+
+  it("excludes MCP-only KD7 tool from R6 rollout while keeping propose floor", () => {
     const mcp = ingestMcp(join(root, "contracts/demo/mcp-tools.json"));
     const openApi = ingestOpenApi({
       mode: "lockfile",
@@ -50,7 +71,14 @@ describe("inventory merge", () => {
     const recent = ir.capabilities.find((c) => c.toolName === "listRecentOrders");
     expect(recent).toBeTruthy();
     expect(recent?.httpMapped).toBe(false);
-    expect(ir.uncovered.some((u) => u.toolName === "listRecentOrders")).toBe(true);
+    expect(ir.uncovered.some((u) => u.toolName === "listRecentOrders")).toBe(false);
+    expect(
+      ir.intentionallyUncovered.some(
+        (u) =>
+          u.toolName === "listRecentOrders" &&
+          u.reason === "rollout-excluded-kd7-mcp-only-proof",
+      ),
+    ).toBe(true);
   });
 
   it("marks mutating tools intentionally uncovered without allowlist (AE7)", () => {

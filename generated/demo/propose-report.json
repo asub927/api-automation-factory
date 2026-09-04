@@ -4,7 +4,7 @@
   "openApiDigest": "d0dfc08cb8d9a61770cb1960267e9277608d6d13b47a98360ef59c132f58010f",
   "openApiUri": "/workspace/contracts/demo/openapi.yaml",
   "mcpDigest": "7f51e7da87085515f87c3052a24b2080a9ae8457b86976af8f88301a2f65ec73",
-  "irHash": "2653744ca9580ce920e08288419c75e3a60ff432890c7016f696aefc2550955b",
+  "irHash": "f872dff9a42eb3cdf0db6639219f64b33a4be2ce405c692c7a5b4be2026dd1f9",
   "coverage": {
     "capabilities": 3,
     "httpMapped": 1,
@@ -28,11 +28,6 @@
       "kind": "unmapped",
       "operationId": "getHealth",
       "reason": "HTTP operation has no MCP tool"
-    },
-    {
-      "kind": "unmapped",
-      "toolName": "listRecentOrders",
-      "reason": "no HTTP mapping after heuristics and overrides"
     }
   ],
   "intentionallyUncovered": [
@@ -40,6 +35,11 @@
       "kind": "intentionally-uncovered",
       "toolName": "deleteOrder",
       "reason": "mutation-not-allowlisted"
+    },
+    {
+      "kind": "intentionally-uncovered",
+      "toolName": "listRecentOrders",
+      "reason": "rollout-excluded-kd7-mcp-only-proof"
     }
   ]
 }
