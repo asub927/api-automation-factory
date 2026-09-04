@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { CoverageIr, Capability } from "../inventory/ir.js";
 import { assertSupportedIrVersion } from "../inventory/ir.js";
@@ -27,12 +27,45 @@ function isRolloutExcluded(cap: Capability, ir: CoverageIr): boolean {
 }
 
 function shouldEmitLiveMcp(cap: Capability, ir: CoverageIr): boolean {
-  // Mutation fail-closed: non-allowlisted mutators are not invoked live (AE7).
-  // Rollout exclusions still receive MCP-floor propose coverage (KD7 / demo DoD).
   return !ir.intentionallyUncovered.some(
     (u) =>
       u.toolName === cap.toolName && u.reason === "mutation-not-allowlisted",
   );
+}
+
+/** Sample path for generated HTTP tests — prefer numeric ids for public APIs. */
+export function samplePath(serviceId: string, pathTemplate: string): string {
+  const sample = serviceId === "demo" ? "demo-1" : "1";
+  return pathTemplate.replace(/\{[^}]+\}/g, sample);
+}
+
+/** Sample MCP args from capability input schema (path/query/body props). */
+export function sampleMcpArgs(cap: Capability, serviceId: string): Record<string, unknown> {
+  const schema = cap.inputSchema as
+    | { properties?: Record<string, { type?: string }>; required?: string[] }
+    | undefined;
+  const idSample = serviceId === "demo" ? "demo-1" : 1;
+  if (!schema?.properties) {
+    if (cap.path?.includes("{")) return { id: idSample, orderId: idSample };
+    return {};
+  }
+  const args: Record<string, unknown> = {};
+  const required = new Set(
+    schema.required && schema.required.length > 0
+      ? schema.required
+      : Object.keys(schema.properties),
+  );
+  for (const key of required) {
+    const prop = schema.properties[key];
+    if (!prop) continue;
+    if (prop.type === "integer" || prop.type === "number") args[key] = 1;
+    else if (prop.type === "boolean") args[key] = true;
+    else if (key === "title") args[key] = "factory-spike-title";
+    else if (key === "body") args[key] = "factory-spike-body";
+    else if (key === "orderId" || key === "id") args[key] = idSample;
+    else args[key] = String(idSample);
+  }
+  return args;
 }
 
 export function emitHttpSuites(ir: CoverageIr, outDir: string): string[] {
@@ -45,18 +78,24 @@ export function emitHttpSuites(ir: CoverageIr, outDir: string): string[] {
     (c) => c.httpMapped && !isRolloutExcluded(c, ir),
   )) {
     const file = join(outDir, `${cap.toolName}.generated.spec.ts`);
+    const method = cap.method ?? "GET";
+    const needsBody = method === "POST" || method === "PUT" || method === "PATCH";
+    const bodyLiteral = needsBody
+      ? JSON.stringify({ title: "factory-spike-title", body: "factory-spike-body", userId: 1 })
+      : "undefined";
     const content = `${BANNER}import { test, expect } from "@playwright/test";
 import { ${cap.toolName}ResponseSchema } from "../schemas/${cap.toolName}.schema.js";
 import { loadAuthHeaders } from "../../../support/fixtures/auth.js";
 import { expectZod } from "../../../support/fixtures/expectZod.js";
 
 test.describe(${JSON.stringify(ir.serviceId + " http " + cap.toolName)}, () => {
-  test(${JSON.stringify(cap.method + " " + (cap.path ?? ""))}, async ({ request }) => {
+  test(${JSON.stringify(method + " " + (cap.path ?? ""))}, async ({ request }) => {
     const headers = loadAuthHeaders(${JSON.stringify(ir.serviceId)});
-    const path = ${JSON.stringify((cap.path ?? "/").replace(/\{[^}]+\}/g, "demo-1"))};
+    const path = ${JSON.stringify(samplePath(ir.serviceId, cap.path ?? "/"))};
     const response = await request.fetch(path, {
-      method: ${JSON.stringify(cap.method ?? "GET")},
+      method: ${JSON.stringify(method)},
       headers,
+      data: ${bodyLiteral},
     });
     expect(response.ok(), \`status \${response.status()}\`).toBeTruthy();
     const body: unknown = await response.json();
@@ -80,14 +119,15 @@ export function emitMcpSuites(ir: CoverageIr, outDir: string): string[] {
   for (const cap of ir.capabilities) {
     if (!shouldEmitLiveMcp(cap, ir)) continue;
     const file = join(outDir, `${cap.toolName}.generated.spec.ts`);
+    const args = sampleMcpArgs(cap, ir.serviceId);
     const content = `${BANNER}import { test, expect } from "@playwright/test";
 import { ${cap.toolName}ResponseSchema } from "../schemas/${cap.toolName}.schema.js";
-import { callDemoMcpTool } from "../../../support/fixtures/mcpClient.js";
+import { callMcpTool } from "../../../support/fixtures/mcpClient.js";
 import { expectZod } from "../../../support/fixtures/expectZod.js";
 
 test.describe(${JSON.stringify(ir.serviceId + " mcp " + cap.toolName)}, () => {
   test(${JSON.stringify("callTool " + cap.toolName)}, async () => {
-    const result = await callDemoMcpTool(${JSON.stringify(cap.toolName)}, {});
+    const result = await callMcpTool(${JSON.stringify(ir.serviceId)}, ${JSON.stringify(cap.toolName)}, ${JSON.stringify(args)});
     expect(result.isError, "MCP tool returned isError").toBeFalsy();
     const payload = result.structuredContent ?? result.content;
     expectZod(${cap.toolName}ResponseSchema, payload);

@@ -88,9 +88,26 @@ npm run factory -- propose --service demo --dry-run
 
 # start fixture + run dual-lane Playwright projects
 node fixtures/demo-service/server.mjs &
-DEMO_API_TOKEN=demo-token npm run test:e2e
+DEMO_API_TOKEN=demo-token npm run test:e2e -- --project=demo-http --project=demo-mcp
 ```
 
 Demo R6: `getOrderById` is dual-lane mapped; `listRecentOrders` is MCP-floor propose coverage and **rollout-excluded** (`support/exclusions/demo.yaml`) as the KD7 MCP-only proof tool.
+
+## JSONPlaceholder spike (Tier A dual-lane)
+
+Grounded in `STRATEGY.md` and `docs/research/experiment-apis-and-inputs.md`.
+
+```bash
+# derive MCP tools from OpenAPI (openapi-to-mcp operationId naming)
+npm run derive:mcp -- contracts/jsonplaceholder/openapi.yaml contracts/jsonplaceholder/mcp-tools.json
+
+# compile propose-only (never auto-merges)
+npm run factory -- propose --service jsonplaceholder --dry-run
+
+# live dual-lane against https://jsonplaceholder.typicode.com
+npx playwright test --project=jsonplaceholder-http --project=jsonplaceholder-mcp
+```
+
+`deletePost` stays mutation-fail-closed (not allowlisted). Suites are propose-only draft PRs on `factory/jsonplaceholder`.
 
 See `docs/plans/2026-09-04-001-feat-api-automation-factory-plan.md` for the full product and planning contract.

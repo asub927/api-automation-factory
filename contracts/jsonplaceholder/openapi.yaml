@@ -1,0 +1,110 @@
+openapi: 3.0.3
+info:
+  title: JSONPlaceholder Posts (spike subset)
+  version: "1.0"
+  description: >
+    Bounded /posts CRUD surface for the dual-lane factory spike.
+    Derived from the community posts OpenAPI; schemas inlined for Zod emit.
+servers:
+  - url: https://jsonplaceholder.typicode.com
+paths:
+  /posts:
+    get:
+      operationId: listPosts
+      summary: List posts
+      tags: [Posts]
+      responses:
+        "200":
+          description: Array of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+    post:
+      operationId: createPost
+      summary: Create post (simulated)
+      tags: [Posts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "201":
+          description: Created post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+  /posts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: getPost
+      summary: Get post by id
+      tags: [Posts]
+      responses:
+        "200":
+          description: A post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+    put:
+      operationId: replacePost
+      summary: Replace post (simulated)
+      tags: [Posts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "200":
+          description: Replaced post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+    delete:
+      operationId: deletePost
+      summary: Delete post (simulated)
+      tags: [Posts]
+      responses:
+        "200":
+          description: Empty object
+          content:
+            application/json:
+              schema:
+                type: object
+components:
+  schemas:
+    PostInput:
+      type: object
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+        userId:
+          type: integer
+    Post:
+      type: object
+      required: [userId, id, title, body]
+      properties:
+        userId:
+          type: integer
+        id:
+          type: integer
+        title:
+          type: string
+        body:
+          type: string

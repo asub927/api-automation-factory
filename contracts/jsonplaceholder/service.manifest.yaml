@@ -1,0 +1,13 @@
+serviceId: jsonplaceholder
+baseUrl: https://jsonplaceholder.typicode.com
+mcpEndpoint: https://jsonplaceholder.typicode.com
+authProfileId: jsonplaceholder
+openApi:
+  mode: lockfile
+  path: contracts/jsonplaceholder/openapi.yaml
+mcp:
+  path: contracts/jsonplaceholder/mcp-tools.json
+  transport: in-memory
+mappingPath: support/mappings/jsonplaceholder.yaml
+exclusionPath: support/exclusions/jsonplaceholder.yaml
+allowlistPath: support/allowlists/jsonplaceholder.yaml

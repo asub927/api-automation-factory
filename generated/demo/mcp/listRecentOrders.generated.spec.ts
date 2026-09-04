@@ -2,12 +2,12 @@
 // Owned path: regenerated on propose. Hand edits belong in support/fixtures.
 import { test, expect } from "@playwright/test";
 import { listRecentOrdersResponseSchema } from "../schemas/listRecentOrders.schema.js";
-import { callDemoMcpTool } from "../../../support/fixtures/mcpClient.js";
+import { callMcpTool } from "../../../support/fixtures/mcpClient.js";
 import { expectZod } from "../../../support/fixtures/expectZod.js";
 
 test.describe("demo mcp listRecentOrders", () => {
   test("callTool listRecentOrders", async () => {
-    const result = await callDemoMcpTool("listRecentOrders", {});
+    const result = await callMcpTool("demo", "listRecentOrders", {"limit":1});
     expect(result.isError, "MCP tool returned isError").toBeFalsy();
     const payload = result.structuredContent ?? result.content;
     expectZod(listRecentOrdersResponseSchema, payload);
