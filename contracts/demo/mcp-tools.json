@@ -1,0 +1,47 @@
+{
+  "tools": [
+    {
+      "name": "getOrderById",
+      "description": "Fetch an order by id",
+      "annotations": { "readOnlyHint": true },
+      "inputSchema": {
+        "type": "object",
+        "required": ["orderId"],
+        "properties": {
+          "orderId": { "type": "string" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": ["id", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "listRecentOrders",
+      "description": "MCP-only tool without Spring enrichment",
+      "annotations": { "readOnlyHint": true },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": { "type": "integer" }
+        }
+      }
+    },
+    {
+      "name": "deleteOrder",
+      "description": "Destructive tool for allowlist tests",
+      "annotations": { "destructiveHint": true },
+      "inputSchema": {
+        "type": "object",
+        "required": ["orderId"],
+        "properties": {
+          "orderId": { "type": "string" }
+        }
+      }
+    }
+  ]
+}

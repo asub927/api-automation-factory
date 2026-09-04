@@ -1,0 +1,42 @@
+openapi: 3.0.3
+info:
+  title: Demo Service
+  version: 1.0.0
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrderById
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, status]
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [pending, shipped, cancelled]
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
