@@ -1,0 +1,38 @@
+name: factory-propose
+
+# Operator-initiated only (v1). Do not auto-run on every contracts/** commit.
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: Service id (e.g. demo)
+        required: true
+        default: demo
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  propose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Compile propose (dry-run default)
+        run: npx tsx src/cli/index.ts propose --service ${{ inputs.service }} --dry-run
+      - name: Create draft PR for generated suites
+        if: ${{ false }} # enable when GitHub App credentials are configured; never auto-merge
+        uses: peter-evans/create-pull-request@v7
+        with:
+          draft: true
+          branch: factory/${{ inputs.service }}
+          title: "chore(tests): factory propose ${{ inputs.service }}"
+          add-paths: |
+            generated/${{ inputs.service }}/**
+          body: |
+            Draft factory propose PR. Human review required. Never auto-merged.

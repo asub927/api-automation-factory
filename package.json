@@ -1,0 +1,33 @@
+{
+  "name": "api-automation-factory",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Compile-first factory: MCP + OpenAPI → Playwright HTTP/MCP suites with Zod",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "bin": {
+    "factory": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run test:unit",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
+    "factory": "tsx src/cli/index.ts",
+    "derive:mcp": "node scripts/derive-mcp-from-openapi.mjs"
+  },
+  "dependencies": {
+    "yaml": "^2.7.1",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.51.0",
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
+  }
+}

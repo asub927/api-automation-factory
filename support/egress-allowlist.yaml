@@ -1,0 +1,7 @@
+hosts:
+  - localhost
+  - 127.0.0.1
+  - "[::1]"
+  # Tier A experiment host (docs/research/experiment-apis-and-inputs.md) — spike-approved.
+  - jsonplaceholder.typicode.com
+# Add staging hosts explicitly; other prod hosts require human flag (KTD13).

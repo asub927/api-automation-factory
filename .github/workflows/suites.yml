@@ -1,0 +1,83 @@
+name: suites
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  demo-lanes:
+    runs-on: ubuntu-latest
+    env:
+      DEMO_API_TOKEN: demo-ci-token
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npx tsx src/cli/index.ts propose --service demo --dry-run
+      - name: Start demo fixture
+        run: |
+          node fixtures/demo-service/server.mjs &
+          echo $! > /tmp/demo-fixture.pid
+          sleep 1
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run demo dual-lane projects
+        run: npx playwright test --project=demo-http --project=demo-mcp
+      - name: Stop fixture
+        if: always()
+        run: kill $(cat /tmp/demo-fixture.pid) || true
+
+  jsonplaceholder-lanes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npx tsx src/cli/index.ts propose --service jsonplaceholder --dry-run
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run JSONPlaceholder dual-lane (Tier A spike)
+        run: npx playwright test --project=jsonplaceholder-http --project=jsonplaceholder-mcp
+
+  auth-failure-class:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Auth-class failure when DEMO_API_TOKEN unset (AE6)
+        env:
+          DEMO_API_TOKEN: ""
+        run: |
+          unset DEMO_API_TOKEN
+          npx tsx --eval '
+          import { loadAuthHeaders } from "./support/fixtures/auth.ts";
+          try {
+            loadAuthHeaders("demo");
+            console.error("expected auth failure when DEMO_API_TOKEN unset");
+            process.exit(1);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            const fc = err && typeof err === "object" && "failureClass" in err ? (err as { failureClass: string }).failureClass : undefined;
+            if (fc !== "auth" && !msg.startsWith("auth:")) {
+              console.error("expected auth-class failure, got:", fc, msg);
+              process.exit(1);
+            }
+            if (msg.includes("contract") || fc === "contract") {
+              console.error("auth missclassified as contract");
+              process.exit(1);
+            }
+            console.log("auth-class ok:", msg);
+          }
+          '

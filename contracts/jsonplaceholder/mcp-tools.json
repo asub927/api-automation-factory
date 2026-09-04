@@ -1,0 +1,130 @@
+{
+  "tools": [
+    {
+      "name": "createPost",
+      "description": "Create post (simulated)",
+      "annotations": {
+        "destructiveHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "title",
+          "body",
+          "userId"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "integer"
+          }
+        }
+      },
+      "xFactoryHttp": {
+        "method": "POST",
+        "path": "/posts"
+      }
+    },
+    {
+      "name": "deletePost",
+      "description": "Delete post (simulated)",
+      "annotations": {
+        "destructiveHint": true
+      },
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        }
+      },
+      "xFactoryHttp": {
+        "method": "DELETE",
+        "path": "/posts/{id}"
+      }
+    },
+    {
+      "name": "getPost",
+      "description": "Get post by id",
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        }
+      },
+      "xFactoryHttp": {
+        "method": "GET",
+        "path": "/posts/{id}"
+      }
+    },
+    {
+      "name": "listPosts",
+      "description": "List posts",
+      "annotations": {
+        "readOnlyHint": true
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "xFactoryHttp": {
+        "method": "GET",
+        "path": "/posts"
+      }
+    },
+    {
+      "name": "replacePost",
+      "description": "Replace post (simulated)",
+      "annotations": {
+        "destructiveHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "body",
+          "userId"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "integer"
+          }
+        }
+      },
+      "xFactoryHttp": {
+        "method": "PUT",
+        "path": "/posts/{id}"
+      }
+    }
+  ],
+  "derivedFrom": "contracts/jsonplaceholder/openapi.yaml",
+  "naming": "operationId",
+  "bridge": "openapi-to-mcp-compatible"
+}

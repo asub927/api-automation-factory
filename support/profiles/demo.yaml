@@ -1,0 +1,5 @@
+id: demo
+type: bearer
+headerName: Authorization
+env:
+  token: DEMO_API_TOKEN
