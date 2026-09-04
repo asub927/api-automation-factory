@@ -5,17 +5,20 @@ import { z } from "zod";
 
 const ProfileSchema = z.object({
   id: z.string(),
-  type: z.enum(["api_key", "bearer", "basic", "oauth_client_credentials"]),
+  type: z.enum(["none", "api_key", "bearer", "basic", "oauth_client_credentials"]),
   headerName: z.string().optional(),
-  env: z.object({
-    token: z.string().regex(/^[A-Z0-9_]+$/).optional(),
-    username: z.string().regex(/^[A-Z0-9_]+$/).optional(),
-    password: z.string().regex(/^[A-Z0-9_]+$/).optional(),
-    clientId: z.string().regex(/^[A-Z0-9_]+$/).optional(),
-    clientSecret: z.string().regex(/^[A-Z0-9_]+$/).optional(),
-    tokenUrl: z.string().regex(/^[A-Z0-9_]+$/).optional(),
-  }),
+  env: z
+    .object({
+      token: z.string().regex(/^[A-Z0-9_]+$/).optional(),
+      username: z.string().regex(/^[A-Z0-9_]+$/).optional(),
+      password: z.string().regex(/^[A-Z0-9_]+$/).optional(),
+      clientId: z.string().regex(/^[A-Z0-9_]+$/).optional(),
+      clientSecret: z.string().regex(/^[A-Z0-9_]+$/).optional(),
+      tokenUrl: z.string().regex(/^[A-Z0-9_]+$/).optional(),
+    })
+    .default({}),
 });
+
 
 export type AuthProfile = z.infer<typeof ProfileSchema>;
 
@@ -60,6 +63,9 @@ export function resolveProfilePath(repoRoot: string, profileId: string): string 
 
 /** Build headers from env at runtime — never write resolved values into generated files. */
 export function headersFromProfile(profile: AuthProfile, env: NodeJS.ProcessEnv = process.env): Record<string, string> {
+  if (profile.type === "none") {
+    return {};
+  }
   if (profile.type === "api_key" || profile.type === "bearer") {
     const name = profile.env.token;
     if (!name) throw new AuthError("profile missing env.token");
@@ -85,3 +91,4 @@ export function headersFromProfile(profile: AuthProfile, env: NodeJS.ProcessEnv 
   }
   throw new AuthError(`oauth_client_credentials runtime resolution deferred; provide bearer token env for v1`);
 }
+

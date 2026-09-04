@@ -24,14 +24,54 @@ function methodsOf(pathItem: Record<string, unknown>): string[] {
   );
 }
 
+/** Resolve local #/components/... refs (enough for Zod emit on lockfiles). */
+export function resolveRef(schema: unknown, root: unknown, seen = new Set<string>()): unknown {
+  if (!schema || typeof schema !== "object") return schema;
+  const obj = schema as Record<string, unknown>;
+  if (typeof obj.$ref === "string") {
+    const ref = obj.$ref;
+    if (!ref.startsWith("#/")) return schema;
+    if (seen.has(ref)) return { type: "object" };
+    seen.add(ref);
+    const parts = ref.slice(2).split("/");
+    let cur: unknown = root;
+    for (const p of parts) {
+      if (!cur || typeof cur !== "object") return schema;
+      cur = (cur as Record<string, unknown>)[p];
+    }
+    return resolveRef(cur, root, seen);
+  }
+  if (Array.isArray(schema)) {
+    return schema.map((s) => resolveRef(s, root, seen));
+  }
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (k === "properties" && v && typeof v === "object") {
+      out[k] = Object.fromEntries(
+        Object.entries(v as Record<string, unknown>).map(([pk, pv]) => [
+          pk,
+          resolveRef(pv, root, new Set(seen)),
+        ]),
+      );
+    } else if (k === "items" || k === "additionalProperties") {
+      out[k] = resolveRef(v, root, new Set(seen));
+    } else if (k === "oneOf" || k === "anyOf" || k === "allOf") {
+      out[k] = Array.isArray(v)
+        ? v.map((s) => resolveRef(s, root, new Set(seen)))
+        : v;
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
 export function ingestOpenApi(opts: {
   mode: "lockfile" | "fetch";
   path?: string;
   url?: string;
 }): OpenApiInventory {
   if (opts.mode === "fetch") {
-    // v1: lockfile preferred; fetch requires network and is gated by egress in manifest load.
-    // Implementers may enable later; for now fail closed to keep compile offline-first.
     throw new SetupError(
       "openApi.mode=fetch is not enabled in v1; commit a lockfile under contracts/<service>/",
     );
@@ -52,20 +92,24 @@ export function ingestOpenApi(opts: {
         requestBody?: { content?: Record<string, { schema?: unknown }> };
         responses?: Record<string, { content?: Record<string, { schema?: unknown }> }>;
       };
-      const requestSchema =
+      const requestSchemaRaw =
         op.requestBody?.content?.["application/json"]?.schema ??
         op.requestBody?.content?.["application/*+json"]?.schema;
       const ok =
         op.responses?.["200"] ?? op.responses?.["201"] ?? op.responses?.default;
-      const responseSchema =
+      const responseSchemaRaw =
         ok?.content?.["application/json"]?.schema ??
         ok?.content?.["application/*+json"]?.schema;
       operations.push({
         operationId: op.operationId,
         method: method.toUpperCase(),
         path,
-        requestSchema,
-        responseSchema,
+        requestSchema: requestSchemaRaw
+          ? resolveRef(requestSchemaRaw, raw)
+          : undefined,
+        responseSchema: responseSchemaRaw
+          ? resolveRef(responseSchemaRaw, raw)
+          : undefined,
         summary: op.summary,
       });
     }

@@ -12,6 +12,7 @@ test.describe("demo http getOrderById", () => {
     const response = await request.fetch(path, {
       method: "GET",
       headers,
+      data: undefined,
     });
     expect(response.ok(), `status ${response.status()}`).toBeTruthy();
     const body: unknown = await response.json();

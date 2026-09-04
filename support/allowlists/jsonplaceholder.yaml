@@ -1,0 +1,4 @@
+allowlist:
+  - toolName: createPost
+  - toolName: replacePost
+# deletePost remains fail-closed (mutation-not-allowlisted) for AE7 proof on this surface

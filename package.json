@@ -16,7 +16,8 @@
     "test": "npm run test:unit",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "factory": "tsx src/cli/index.ts"
+    "factory": "tsx src/cli/index.ts",
+    "derive:mcp": "node scripts/derive-mcp-from-openapi.mjs"
   },
   "dependencies": {
     "yaml": "^2.7.1",
