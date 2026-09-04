@@ -52,4 +52,15 @@ LLM assistance is optional and **off by default**.
 - `src/` — factory CLI, ingest, inventory, emit, propose
 - `fixtures/demo-service/` — local dual-lane proof target
 
+## Demo flow
+
+```bash
+# compile suites (dry-run propose)
+npm run factory -- propose --service demo --dry-run
+
+# start fixture + run dual-lane Playwright projects
+node fixtures/demo-service/server.mjs &
+DEMO_API_TOKEN=demo-token npm run test:e2e
+```
+
 See `docs/plans/2026-09-04-001-feat-api-automation-factory-plan.md` for the full product and planning contract.

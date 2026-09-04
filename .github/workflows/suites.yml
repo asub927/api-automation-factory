@@ -1,0 +1,33 @@
+name: suites
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  demo-lanes:
+    runs-on: ubuntu-latest
+    env:
+      DEMO_API_TOKEN: demo-ci-token
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npx tsx src/cli/index.ts propose --service demo --dry-run
+      - name: Start demo fixture
+        run: node fixtures/demo-service/server.mjs &
+          echo $! > /tmp/demo-fixture.pid
+          sleep 1
+      - name: Install Playwright browsers (chromium only if needed)
+        run: npx playwright install --with-deps chromium
+      - name: Run discovered Playwright projects
+        run: npm run test:e2e
+        continue-on-error: true
+      - name: Stop fixture
+        if: always()
+        run: kill $(cat /tmp/demo-fixture.pid) || true

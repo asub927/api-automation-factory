@@ -1,0 +1,45 @@
+{
+  "serviceId": "demo",
+  "generatorVersion": "0.1.0",
+  "openApiDigest": "d0dfc08cb8d9a61770cb1960267e9277608d6d13b47a98360ef59c132f58010f",
+  "openApiUri": "/workspace/contracts/demo/openapi.yaml",
+  "mcpDigest": "7f51e7da87085515f87c3052a24b2080a9ae8457b86976af8f88301a2f65ec73",
+  "irHash": "2653744ca9580ce920e08288419c75e3a60ff432890c7016f696aefc2550955b",
+  "coverage": {
+    "capabilities": 3,
+    "httpMapped": 1,
+    "mcpLive": 2
+  },
+  "drift": [
+    {
+      "code": "http-without-mcp",
+      "severity": "INFO",
+      "operationId": "getHealth",
+      "message": "GET /health has no MCP tool"
+    }
+  ],
+  "uncovered": [
+    {
+      "kind": "unmapped",
+      "toolName": "deleteOrder",
+      "reason": "no HTTP mapping after heuristics and overrides"
+    },
+    {
+      "kind": "unmapped",
+      "operationId": "getHealth",
+      "reason": "HTTP operation has no MCP tool"
+    },
+    {
+      "kind": "unmapped",
+      "toolName": "listRecentOrders",
+      "reason": "no HTTP mapping after heuristics and overrides"
+    }
+  ],
+  "intentionallyUncovered": [
+    {
+      "kind": "intentionally-uncovered",
+      "toolName": "deleteOrder",
+      "reason": "mutation-not-allowlisted"
+    }
+  ]
+}
