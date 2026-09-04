@@ -5,3 +5,4 @@ Compile-first factory that turns MCP tool surfaces plus Spring Boot API contract
 - Product strategy: [`STRATEGY.md`](./STRATEGY.md)
 - Product plan: [`docs/plans/2026-09-04-001-feat-api-automation-factory-plan.md`](./docs/plans/2026-09-04-001-feat-api-automation-factory-plan.md)
 - Agents SDK pattern research: [`docs/research/openai-agents-js-patterns-for-factory.md`](./docs/research/openai-agents-js-patterns-for-factory.md)
+- Experiment APIs & inputs: [`docs/research/experiment-apis-and-inputs.md`](./docs/research/experiment-apis-and-inputs.md)
