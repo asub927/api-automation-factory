@@ -107,10 +107,29 @@ async function callJsonPlaceholderBridge(
       body[k] = v;
     }
   }
-  // leftover unresolved path params
-  path = path.replace(/\{[^}]+\}/g, "1");
+  // leftover unresolved path params — fail closed (do not invent ids)
+  if (/\{[^}]+\}/.test(path)) {
+    throw Object.assign(
+      new Error(`setup: MCP tool ${name} missing path args for ${path}`),
+      { failureClass: "setup" as const },
+    );
+  }
   const url =
     query.length > 0 ? `${base}${path}?${query.join("&")}` : `${base}${path}`;
+
+  // Egress gate for runtime bridge (env override must still be allowlisted)
+  try {
+    const { assertEgressAllowed, loadEgressAllowlist } = await import(
+      "../../src/inventory/manifest.js"
+    );
+    assertEgressAllowed(url, loadEgressAllowlist(root), { allowHttpLocalhost: true });
+  } catch (err) {
+    if (err && typeof err === "object" && "failureClass" in err) throw err;
+    throw Object.assign(
+      new Error(`setup: egress check failed: ${err instanceof Error ? err.message : String(err)}`),
+      { failureClass: "setup" as const },
+    );
+  }
 
   let response: Response;
   try {

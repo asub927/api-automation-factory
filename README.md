@@ -108,6 +108,6 @@ npm run factory -- propose --service jsonplaceholder --dry-run
 npx playwright test --project=jsonplaceholder-http --project=jsonplaceholder-mcp
 ```
 
-`deletePost` stays mutation-fail-closed (not allowlisted). Suites are propose-only draft PRs on `factory/jsonplaceholder`.
+`deletePost` is omitted from the **live MCP** lane (mutation fail-closed / not allowlisted). An HTTP Zod test is still emitted for the mapped DELETE operation because AE7/KTD8 scopes fail-closed to live MCP invocation.
 
 See `docs/plans/2026-09-04-001-feat-api-automation-factory-plan.md` for the full product and planning contract.
