@@ -4,10 +4,11 @@ type: feat
 date: 2026-09-04
 topic: api-automation-factory
 artifact_contract: ce-unified-plan/v1
-artifact_readiness: requirements-only
+artifact_readiness: implementation-ready
 product_contract_source: ce-brainstorm
 execution: code
 revised: 2026-09-05
+planned: 2026-09-05
 ---
 
 # API Automation Factory - Plan
@@ -19,8 +20,9 @@ revised: 2026-09-05
 - **Authority hierarchy:** Product Contract (R/A/F/AE/KD) → Planning Contract (KTD) → Implementation Units → Verification Contract → Definition of Done.
 - **Execution profile:** TypeScript factory in this repository (compiler + tiny fixture/demo only); CLI + CI operator surfaces; propose-only draft PRs opened **directly on the mapped app workspace repo**.
 - **Stop conditions:** Dual-lane emit + propose-only PR path proven against a fixture that mirrors workspace landing; factory self-test goldens green; no auto-merge; LLM remaining optional/marginal; no production service suites committed in this factory repo.
-- **Open blockers:** None that block writing requirements. Planning must re-enrich HOW for workspace-targeted propose (prior implementation-ready HOW assumed in-repo `generated/` and is superseded for suite landing).
-- **Product Contract preservation:** KD1–KD7 and R1–R11 meaning retained. **KD8** and **R12–R15** add workspace landing. **AE13–AE15** and **F8** cover scaffold/propose-target behavior. Prior Planning Contract / Implementation Units on main that emit into this repo's `generated/<service>/…` are **superseded for suite landing** and must be re-planned.
+- **Open blockers:** None. Deferred planning questions Q1/Q2/Q4 remain non-blocking (mapping heuristics, auth CI injection detail, Spring artifact preference).
+- **Product Contract preservation:** Product Contract unchanged ("Product Contract unchanged" — KD1–KD8 / R1–R15 / AE1–AE15 / F1–F8 meaning retained). Planning sections below replace superseded in-repo `generated/` HOW.
+- **Summary:** Suites land in app-workspace Playwright npm workspaces; factory proposes draft PRs there only; this repo keeps compiler + fixture/demo.
 
 ---
 
@@ -29,6 +31,8 @@ revised: 2026-09-05
 ### Summary
 
 An ecosystem-scale API automation factory compiles MCP definitions and Spring Boot contracts into deterministic Playwright tests with Zod checks for both HTTP endpoints and live MCP tool calls. It opens propose-only draft PRs for human review on the **app workspace repo** that aggregates UI/API components as git submodules. Suites land under that workspace's Playwright npm workspaces (`playwright/` root + `ui` + `api`), not in this agent/factory codebase. OpenAI assists only at the margins (auth wiring, unmapped leftovers), not as free-form suite authorship.
+
+**Scoping synthesis (confirmed):** Full landing/propose change is in scope—layout, scaffold validation, external draft propose, factory limited to compiler + fixture/demo. Tests cover emit layout, scaffold failure before PR, and workspace-targeted propose. Factory does not author UI tests. Support fixtures are **vendored into** each workspace propose. Existing in-repo `generated/` demos are **demoted to factory self-test** (not production landing). v1 includes **real draft PRs** against the mapped workspace remote.
 
 ### Problem Frame
 
@@ -303,11 +307,205 @@ flowchart TB
 
 - None.
 
-**Deferred to Planning**
+**Deferred (non-blocking)**
 
-- Q1. How MCP tools are mapped to HTTP endpoints when names/paths diverge (conventions, annotations, manual mapping table).
-- Q2. Exact shape of per-service auth profile configuration and secret injection in workspace CI.
-- Q3. Manifest fields for app workspace repo identity, credentials, branch naming, and `<service-id>` — plus scaffolding validation rule set (required files/workspaces).
-- Q4. Which Spring artifacts are preferred for compile input when multiple exist (OpenAPI annotations, controllers+DTOs, exported specs).
-- Q5. Operator interface details for first rollout (CLI flags vs CI workflow inputs) now that propose targets an external workspace repo.
-- Q6. Migration plan for existing in-factory `generated/` demo/jsonplaceholder artifacts relative to fixture-only policy (R12).
+- Q1. How MCP tools are mapped to HTTP endpoints when names/paths diverge (conventions, annotations, manual mapping table). Existing heuristic + override table remains; refine during implementation against fixtures.
+- Q2. Exact secret injection wiring inside each app workspace CI (env names stay in auth profiles; workspace workflows own value injection).
+- Q4. Which Spring artifacts are preferred when multiple exist (default remains exported OpenAPI lockfile; AST fallback later).
+
+**Resolved in Planning Contract**
+
+- Q3 → KTD1, KTD4 (manifest workspace target + scaffold validation rules).
+- Q5 → KTD2, KTD5 (CLI propose targets workspace remote; CI wraps same CLI).
+- Q6 → KTD3 (in-repo `generated/` demoted to fixture/self-test only).
+
+---
+
+## Planning Contract
+
+### Assumptions
+
+- App workspace repos can grant the factory a fine-scoped GitHub App/PAT that opens **draft** PRs with path filters; no auto-merge permission.
+- A local **workspace fixture** (checked into this factory repo under `fixtures/`) mirrors the Playwright npm workspace shape so unit/integration tests do not need live GitHub.
+- Existing compile/inventory/auth IR path (`src/inventory/*`, `src/emit/*`, `src/auth/*`) remains the emit spine; this plan changes **landing target + layout + propose transport**, not the dual-inventory compiler thesis.
+- Node 22 + TypeScript ESM + Playwright + Zod + Vitest remain the factory toolchain.
+- External research was not load-bearing; decisions follow the Product Contract and current in-repo propose/emit patterns.
+
+### Key Technical Decisions
+
+- KTD1. Manifest carries workspace target — Extend `contracts/<serviceId>/service.manifest.yaml` with `workspace: { repo, defaultBranch?, pathPrefix? }` (repo = `owner/name` or clone URL). `serviceId` remains the stable folder id under `playwright/api/<serviceId>/`. Reject propose when `workspace.repo` is missing for non-fixture services. Governs R13–R14, F4, U1.
+- KTD2. Direct workspace propose transport — `factory propose` compiles, writes into a checkout of the mapped workspace repo (temp clone or explicit `--workspace-dir`), runs scaffold validation, then opens/updates draft PR `factory/<serviceId>` with path globs limited to `playwright/**` for that change set. Never opens suite PRs on submodule remotes. Extends `GitHubProposeClient` with repo-scoped operations; keep `RecordingGitHubClient` for tests. Governs R7, R13, F1, F2, U5.
+- KTD3. Dual emit roots — **Production emit root** is the workspace checkout: `playwright/api/<serviceId>/{tests,schemas}/`. **Factory self-test root** stays local under `generated/<serviceId>/` **only** for `demo` (and similarly marked fixture services) with the **same relative layout adapters** so goldens prove the compiler without pretending this repo is the suite home. jsonplaceholder (or other non-fixture samples) must not remain a production-like committed suite tree in this repo; demote to fixture/docs or remove from default CI. Governs R12, R14, U2, U6.
+- KTD4. API-scoped scaffold + validation gate — Before propose, ensure workspace has Playwright npm workspaces: root `playwright/package.json` (shared `playwright` dep + workspaces), `api/package.json`, and empty `ui/` stubs if missing. Validation fails propose (setup-class) when required workspace wiring or `api/<serviceId>` landing paths are invalid. Factory never authors UI tests or UI-specific dependency trees. Governs R15, F8, AE14–AE15, U4.
+- KTD5. Vendored support kit — Each workspace propose includes a small overwrite-owned support package under `playwright/api/support/` (or `playwright/support/`) with auth/expectZod/mcpClient helpers and import paths rewritten for the new depth. Prefer vendoring over publishing an npm package in v1 so workspaces stay self-contained. Hand-owned overrides live outside overwrite banners. Governs R14, AE9, U3.
+- KTD6. Spec naming under flat tests/ — Emit `playwright/api/<serviceId>/tests/<tool>.http.spec.ts` and `<tool>.mcp.spec.ts`; schemas at `playwright/api/<serviceId>/schemas/`. Retire `*.generated.spec.ts` under `http/`+`mcp/` lane folders for workspace landing (fixture adapter may map old golden trees during migration). Governs R14, U2.
+- KTD7. Path-filtered draft-only propose — PR body keeps coverage/drift/uncovered sections; bot cannot merge/approve; concurrent updates last-write-wins with force-with-lease on `factory/<serviceId>` only; no-delta skips PR. Factory-repo workflows that currently path-filter `generated/**` for production services are updated to fixture-only or removed from default suite gates. Governs R7, R10, AE11, U5, U6.
+
+### High-Level Technical Design
+
+```mermaid
+flowchart TB
+  Manifest[Service manifest + workspace.repo] --> Compile[Compile IR + Zod]
+  Compile --> Checkout[Checkout / clone app workspace]
+  Checkout --> Scaffold[Scaffold + validate playwright workspaces]
+  Scaffold --> Emit[Emit api/serviceId tests + schemas + support kit]
+  Emit --> DraftPR[Draft PR on workspace factory/serviceId]
+  DraftPR --> Human[Human merge in workspace]
+  Human --> WsCI[Workspace CI dual-lane]
+```
+
+Factory self-test path: compile → emit into local fixture/`generated/demo` with layout adapter → Vitest goldens / optional local Playwright — no workspace PR.
+
+### Output Structure (targets)
+
+```text
+# App workspace repo (propose target)
+playwright/
+  package.json                 # workspaces: ui, api; shared playwright dep
+  playwright.config.ts         # discovers api/*/tests
+  ui/                          # empty stub ok
+    package.json
+  api/
+    package.json
+    support/                   # vendored overwrite-owned helpers
+    <serviceId>/
+      tests/
+        <tool>.http.spec.ts
+        <tool>.mcp.spec.ts
+      schemas/
+        <tool>.ts
+
+# Factory repo (this codebase)
+contracts/<serviceId>/service.manifest.yaml   # + workspace.repo
+src/emit/*                                    # layout-aware emitters
+src/propose/*                                 # workspace checkout + draft PR
+src/scaffold/*                                # scaffold + validate
+fixtures/workspace-app/                       # local mirror for tests
+generated/demo/                               # fixture self-test only
+```
+
+### Risks & Dependencies
+
+| Risk | Mitigation |
+|------|------------|
+| Multi-repo credentials / wrong remote | Manifest `workspace.repo` required; unit-test Recording client asserts repo + path globs; AE11/AE13 |
+| Scaffold corrupts existing UI Playwright | Only create empty `ui` stubs; never write UI specs; validation is additive |
+| Import path breakage at new depth | Vendored support kit + golden emit tests for new relative imports |
+| Dual layout during migration | Explicit fixture adapter; fail CI if non-fixture services still land under factory `generated/` |
+| Workspace clone cost | Reuse `--workspace-dir` for local/CI; shallow clone when remote |
+
+---
+
+## Implementation Units
+
+### U1. Manifest workspace target fields
+
+- **Goal:** Service manifests declare where suites land (`workspace.repo` + stable `serviceId`).
+- **Requirements:** R13, R14, F4
+- **Dependencies:** None
+- **Files:** `src/inventory/manifest.ts`, `contracts/demo/service.manifest.yaml`, `contracts/*/service.manifest.yaml`, `tests/unit/inventory/manifest.test.ts`
+- **Approach:** Extend Zod manifest schema with `workspace` object; resolve and validate; fixture services may omit remote and set `workspace.mode: fixture`.
+- **Test scenarios:**
+  - Happy: loads manifest with `workspace.repo` and exposes it to propose.
+  - Happy: fixture mode allowed without remote.
+  - Error: non-fixture missing `workspace.repo` → setup failure before emit.
+- **Verify:** `npm run test:unit -- manifest`
+
+### U2. Workspace emit layout (tests + schemas)
+
+- **Goal:** Emit dual-lane specs and schemas into `playwright/api/<serviceId>/…` naming from KTD6.
+- **Requirements:** R4, R5, R14, AE1, AE13
+- **Dependencies:** U1
+- **Files:** `src/emit/compile.ts`, `src/emit/http.ts`, `src/emit/mcp.ts`, `src/emit/zod.ts`, `tests/golden/*`, `tests/unit/emit/*`
+- **Approach:** Parameterize emit root (workspace checkout vs fixture root). Rewrite import paths to vendored support + local schemas. Update goldens for new filenames.
+- **Test scenarios:**
+  - Happy: compile demo into fixture workspace tree produces `.http.spec.ts` / `.mcp.spec.ts` + schemas.
+  - Happy: mapped capability emits both lanes sharing schema module.
+  - Error: secret-like material still fails emit (existing guard).
+- **Verify:** golden emit tests green for new layout
+
+### U3. Vendored support kit
+
+- **Goal:** Propose includes overwrite-owned support helpers so workspace suites run without depending on this factory repo tree.
+- **Requirements:** R14, AE9, KTD5
+- **Dependencies:** U2
+- **Files:** `src/emit/supportKit.ts` (new), `support/fixtures/*` (source templates), tests under `tests/unit/emit/`
+- **Approach:** Copy/adapt auth, expectZod, mcpClient into `playwright/api/support/` with ownership banners; preserve hand-owned paths outside kit.
+- **Test scenarios:**
+  - Happy: kit files appear in emit result set.
+  - Happy: regeneration overwrites kit files but not adjacent hand-owned fixture files.
+  - Error: kit never embeds resolved secret values.
+- **Verify:** unit tests for kit emit + secret scan
+
+### U4. Scaffold + validation
+
+- **Goal:** Ensure Playwright npm workspace shape exists and is valid before propose.
+- **Requirements:** R15, F8, AE14, AE15
+- **Dependencies:** U1
+- **Files:** `src/scaffold/ensurePlaywrightWorkspace.ts` (new), `src/scaffold/validate.ts` (new), `tests/unit/scaffold/*`, `fixtures/workspace-app/`
+- **Approach:** If missing, create root/api package.json workspaces and empty `ui` stubs; validate workspaces field, required dirs, and service landing path; return setup-class error on failure.
+- **Test scenarios:**
+  - Happy: empty repo fixture gains valid scaffold without UI test files.
+  - Happy: existing valid workspace → no-op / no destructive UI changes.
+  - Error: broken workspace package.json → propose aborted, no PR.
+- **Verify:** scaffold unit tests
+
+### U5. External workspace draft propose
+
+- **Goal:** Open/update draft PRs on the mapped app workspace repo with path-filtered playwright changes only.
+- **Requirements:** R7, R10, R13, AE3, AE11, AE13, F1, F2
+- **Dependencies:** U2, U3, U4
+- **Files:** `src/cli/commands/propose.ts`, `src/propose/gitBranch.ts`, `src/propose/workspaceCheckout.ts` (new), `src/propose/prBody.ts`, `.github/workflows/factory-propose.yml`, `tests/unit/propose/*`
+- **Approach:** After compile, checkout workspace (clone or `--workspace-dir`), scaffold+validate, emit+kit, then draft PR via repo-scoped GitHub client; path globs `playwright/api/<serviceId>/**` plus scaffold/support paths touched; default remains dry-run without `--open-pr`.
+- **Test scenarios:**
+  - Happy: Recording client receives draft PR for `owner/app` with playwright path globs only.
+  - Happy: no-delta → no PR.
+  - Error: validation failure → no GitHub call.
+  - Error: client never invoked with merge/approve.
+- **Verify:** propose unit tests + dry-run CLI against fixture workspace
+
+### U6. Factory fixture-only policy + CI/docs
+
+- **Goal:** This repo no longer presents `generated/jsonplaceholder` (or similar) as production suite home; CI/docs match R12.
+- **Requirements:** R12, KTD3, KTD7
+- **Dependencies:** U2
+- **Files:** `README.md`, `playwright.config.ts`, `.github/workflows/suites.yml`, `generated/jsonplaceholder/**` (remove or relocate under fixtures), docs pointers
+- **Approach:** Limit factory Playwright discovery/CI to demo/fixture; document workspace landing; update README layout section.
+- **Test scenarios:**
+  - Happy: factory CI still runs demo self-test.
+  - Happy: README describes workspace landing, not production `generated/` ownership.
+- **Verify:** `npm run test:unit`, fixture e2e smoke, README review
+
+### U7. Workspace Playwright config template
+
+- **Goal:** Scaffold installs a Playwright config that auto-discovers `api/*/tests` so workspace CI can run merged suites.
+- **Requirements:** R14, F3, AE4
+- **Dependencies:** U4
+- **Files:** `src/scaffold/templates/playwright.config.ts`, fixture workspace copy, tests asserting discovery
+- **Approach:** Template mirrors current auto-discover idea but rooted at `playwright/api/*/tests` with http/mcp filename projects or grep; only written when missing.
+- **Test scenarios:**
+  - Happy: scaffolded config discovers both lane file patterns for a service.
+  - Happy: does not overwrite an existing custom config (document merge guidance in PR body if conflict).
+- **Verify:** scaffold template tests
+
+---
+
+## Verification Contract
+
+- **Factory unit/golden:** `npm run test:unit` (Vitest) — must cover U1–U5 scenarios including layout goldens and propose Recording client.
+- **Factory fixture smoke:** `npm run test:e2e` limited to demo/fixture projects after U6.
+- **Propose dry-run:** `npm run factory -- propose --service demo --dry-run` against fixture workspace dir succeeds with scaffold+emit, no GitHub calls.
+- **Propose open-pr (integration, optional in CI):** mocked or recorded GitHub client asserts draft + path filters; live remote optional behind manual workflow_dispatch.
+- **Quality gates:** typecheck (`npm run typecheck`); secret scan on emitted trees; no auto-merge settings in workflows.
+- **Traceability:** AE13–AE15 and F8 covered by U4/U5 tests; R12 covered by U6.
+
+---
+
+## Definition of Done
+
+- All Implementation Units U1–U7 complete with listed tests green.
+- Product Contract KD8 / R12–R15 behaviors demonstrable via fixture workspace + Recording/draft propose path.
+- No production service suites required to live under this factory repo's `generated/` for CI green.
+- README and factory-propose workflow match workspace-targeted propose.
+- No open **Resolve Before Planning** blockers; deferred Q1/Q2/Q4 documented as non-blocking.
+- Ready for `ce-work` (or equivalent) execution by unit order: U1 → U2/U4 → U3 → U7 → U5 → U6.
