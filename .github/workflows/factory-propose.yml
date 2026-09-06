@@ -1,6 +1,7 @@
 name: factory-propose
 
 # Operator-initiated only (v1). Do not auto-run on every contracts/** commit.
+# Suites land on the mapped app workspace repo under playwright/ — never auto-merge.
 on:
   workflow_dispatch:
     inputs:
@@ -8,6 +9,10 @@ on:
         description: Service id (e.g. demo)
         required: true
         default: demo
+      workspace_dir:
+        description: Local app workspace checkout (defaults to fixtures/workspace-app for dry-run)
+        required: false
+        default: fixtures/workspace-app
 
 permissions:
   contents: write
@@ -23,16 +28,18 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
-      - name: Compile propose (dry-run default)
-        run: npx tsx src/cli/index.ts propose --service ${{ inputs.service }} --dry-run
-      - name: Create draft PR for generated suites
-        if: ${{ false }} # enable when GitHub App credentials are configured; never auto-merge
-        uses: peter-evans/create-pull-request@v7
-        with:
-          draft: true
-          branch: factory/${{ inputs.service }}
-          title: "chore(tests): factory propose ${{ inputs.service }}"
-          add-paths: |
-            generated/${{ inputs.service }}/**
-          body: |
-            Draft factory propose PR. Human review required. Never auto-merged.
+      - name: Propose dry-run (scaffold + emit into workspace dir)
+        run: >
+          npx tsx src/cli/index.ts propose
+          --service ${{ inputs.service }}
+          --workspace-dir ${{ inputs.workspace_dir }}
+          --dry-run
+      - name: Open draft PR on workspace remote
+        if: ${{ false }} # enable when GitHub App credentials + workspace checkout are configured; never auto-merge
+        run: >
+          npx tsx src/cli/index.ts propose
+          --service ${{ inputs.service }}
+          --workspace-dir ${{ inputs.workspace_dir }}
+          --open-pr
+        # Path filter enforced in-process: playwright/api/<service>/** + support/scaffold only.
+        # Target repo comes from contracts/<service>/service.manifest.yaml workspace.repo.
