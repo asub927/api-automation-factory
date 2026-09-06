@@ -66,13 +66,34 @@ Profiles live in `support/profiles/` and declare auth **type** plus secret **env
 
 Missing required secrets fail with **auth** class (exit 79), not contract.
 
+## Where suites land
+
+**Production suites live in the mapped app workspace repo**, not in this factory repo:
+
+```text
+playwright/
+  package.json                 # npm workspaces: ui, api
+  playwright.config.ts         # discovers api/*/tests
+  ui/                          # empty stub ok (factory never authors UI tests)
+  api/
+    support/                   # vendored overwrite-owned helpers
+    <serviceId>/
+      tests/*.{http,mcp}.spec.ts
+      schemas/
+```
+
+`factory propose` scaffolds/validates that shape, emits suites + support kit, and opens a **draft** PR on `workspace.repo` with `playwright/**` path filters only.
+
+This factory repo keeps **compiler + demo/fixture self-tests** under `generated/demo/` only.
+
 ## Layout
 
-- `contracts/<service>/` — OpenAPI + MCP defs + service manifest
+- `contracts/<service>/` — OpenAPI + MCP defs + service manifest (`workspace.repo` / `workspace.mode`)
 - `support/` — auth profiles, mappings, exclusions/allowlists, fixtures, egress allowlist
-- `generated/<service>/{http,mcp,schemas}/` — overwrite-owned emitted suites
-- `src/` — factory CLI, ingest, inventory, emit, propose
-- `fixtures/demo-service/` — local dual-lane proof target
+- `generated/demo/` — factory self-test emit only (same relative `tests/` + `schemas/` layout)
+- `fixtures/workspace-app/` — minimal app-workspace mirror for propose dry-run
+- `fixtures/demo-service/` — local dual-lane proof HTTP/MCP target
+- `src/` — factory CLI, ingest, inventory, emit, scaffold, propose
 - `tests/unit/` + `tests/golden/` — factory unit and emit golden suites
 
 ## CI expectations
@@ -80,39 +101,26 @@ Missing required secrets fail with **auth** class (exit 79), not contract.
 | Workflow | Purpose |
 |----------|---------|
 | `factory-ci.yml` | `typecheck` + Vitest unit/golden |
-| `suites.yml` | Propose dry-run + Playwright `demo-http` / `demo-mcp` against fixture; auth-class gate with unset `DEMO_API_TOKEN` |
-| `factory-propose.yml` | Operator `workflow_dispatch` propose; draft PR step gated until GitHub App creds exist; **never auto-merges** |
+| `suites.yml` | Demo fixture propose dry-run + Playwright `demo-http` / `demo-mcp`; auth-class gate |
+| `factory-propose.yml` | Operator `workflow_dispatch` propose into workspace dir; draft PR gated; **never auto-merges** |
 
-Playwright projects are auto-discovered from `generated/<service>/{http,mcp}` — the propose bot must not edit workflow project lists.
+Factory Playwright discovery is limited to the **demo** self-test service. JSONPlaceholder (and other samples) are contracts/docs only — not default suite CI in this repo.
 
 ## Demo flow
 
 ```bash
-# compile suites (dry-run propose)
-npm run factory -- propose --service demo --dry-run
+# scaffold + emit into fixture workspace (no GitHub)
+npm run factory -- propose --service demo --workspace-dir fixtures/workspace-app --dry-run
 
-# start fixture + run dual-lane Playwright projects
+# start fixture + run factory self-test dual-lane projects
 node fixtures/demo-service/server.mjs &
 DEMO_API_TOKEN=demo-token npm run test:e2e -- --project=demo-http --project=demo-mcp
 ```
 
 Demo R6: `getOrderById` is dual-lane mapped; `listRecentOrders` is MCP-floor propose coverage and **rollout-excluded** (`support/exclusions/demo.yaml`) as the KD7 MCP-only proof tool.
 
-## JSONPlaceholder spike (Tier A dual-lane)
+## JSONPlaceholder sample (contracts only)
 
-Grounded in `STRATEGY.md` and `docs/research/experiment-apis-and-inputs.md`.
-
-```bash
-# derive MCP tools from OpenAPI (openapi-to-mcp operationId naming)
-npm run derive:mcp -- contracts/jsonplaceholder/openapi.yaml contracts/jsonplaceholder/mcp-tools.json
-
-# compile propose-only (never auto-merges)
-npm run factory -- propose --service jsonplaceholder --dry-run
-
-# live dual-lane against https://jsonplaceholder.typicode.com
-npx playwright test --project=jsonplaceholder-http --project=jsonplaceholder-mcp
-```
-
-`deletePost` is omitted from the **live MCP** lane (mutation fail-closed / not allowlisted). An HTTP Zod test is still emitted for the mapped DELETE operation because AE7/KTD8 scopes fail-closed to live MCP invocation.
+Contracts under `contracts/jsonplaceholder/` remain useful for emit unit tests and docs. They are **not** a production suite home in this repo and are excluded from default Playwright/CI discovery. To exercise them, point `workspace.repo` at an app workspace and run `factory propose` there.
 
 See `docs/plans/2026-09-04-001-feat-api-automation-factory-plan.md` for the full product and planning contract.

@@ -5,9 +5,12 @@ import YAML from "yaml";
 import { assertEgressAllowed, loadEgressAllowlist } from "./src/inventory/manifest.js";
 
 /**
- * Auto-discover per-service Playwright projects from generated/<service>/tests.
- * Lane separation uses filename patterns (*.http.spec.ts / *.mcp.spec.ts).
+ * Factory self-test Playwright config (U6 / R12).
+ * Discovers only the demo fixture under generated/demo/tests.
+ * Production suites land in app workspace repos under playwright/api/<serviceId>/.
  */
+const FACTORY_SELF_TEST_SERVICES = new Set(["demo"]);
+
 function baseUrlFor(service: string): string | undefined {
   const envKey = `${service.toUpperCase().replace(/[^A-Z0-9]/g, "_")}_BASE_URL`;
   let baseURL: string | undefined;
@@ -44,6 +47,7 @@ function discoverProjects() {
 
   for (const service of readdirSync(generatedRoot, { withFileTypes: true })) {
     if (!service.isDirectory()) continue;
+    if (!FACTORY_SELF_TEST_SERVICES.has(service.name)) continue;
     const testDir = join(generatedRoot, service.name, "tests");
     if (!existsSync(testDir)) continue;
     const baseURL = baseUrlFor(service.name);

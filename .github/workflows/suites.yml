@@ -6,6 +6,8 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Factory CI runs fixture/demo self-tests only (R12). Production suites live in
+# app workspace repos under playwright/api/<serviceId>/ after propose merge.
 jobs:
   demo-lanes:
     runs-on: ubuntu-latest
@@ -18,7 +20,12 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
-      - run: npx tsx src/cli/index.ts propose --service demo --dry-run
+      - name: Propose dry-run (workspace landing + demo self-test emit)
+        run: >
+          npx tsx src/cli/index.ts propose
+          --service demo
+          --workspace-dir fixtures/workspace-app
+          --dry-run
       - name: Start demo fixture
         run: |
           node fixtures/demo-service/server.mjs &
@@ -26,26 +33,11 @@ jobs:
           sleep 1
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-      - name: Run demo dual-lane projects
+      - name: Run demo dual-lane self-test projects
         run: npx playwright test --project=demo-http --project=demo-mcp
       - name: Stop fixture
         if: always()
         run: kill $(cat /tmp/demo-fixture.pid) || true
-
-  jsonplaceholder-lanes:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-      - run: npm ci
-      - run: npx tsx src/cli/index.ts propose --service jsonplaceholder --dry-run
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-      - name: Run JSONPlaceholder dual-lane (Tier A spike)
-        run: npx playwright test --project=jsonplaceholder-http --project=jsonplaceholder-mcp
 
   auth-failure-class:
     runs-on: ubuntu-latest
