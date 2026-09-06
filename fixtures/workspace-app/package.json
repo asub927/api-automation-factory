@@ -1,0 +1,5 @@
+{
+  "name": "workspace-app-fixture",
+  "private": true,
+  "description": "Minimal app-workspace checkout fixture for scaffold/propose self-tests"
+}
