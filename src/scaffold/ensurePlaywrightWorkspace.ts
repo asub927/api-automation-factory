@@ -5,6 +5,7 @@ import {
   validatePlaywrightWorkspace,
   type PlaywrightWorkspacePaths,
 } from "./validate.js";
+import { writePlaywrightConfigIfMissing } from "./writePlaywrightConfig.js";
 
 const PLAYWRIGHT_VERSION = "^1.51.0";
 
@@ -24,6 +25,11 @@ function ensureDir(path: string): boolean {
 export type EnsureScaffoldResult = {
   paths: PlaywrightWorkspacePaths;
   created: string[];
+  playwrightConfig: {
+    path: string;
+    written: boolean;
+    mergeHint?: string;
+  };
 };
 
 /**
@@ -121,7 +127,13 @@ export function ensurePlaywrightWorkspace(
     created.push(`playwright/api/${serviceId}/schemas/`);
   }
 
+  // Playwright config that discovers api/*/tests — only when missing (U7).
+  const configResult = writePlaywrightConfigIfMissing(paths.playwrightRoot);
+  if (configResult.written) {
+    created.push("playwright/playwright.config.ts");
+  }
+
   // Validate after ensure — broken existing package.json still fails (AE15).
   validatePlaywrightWorkspace(workspaceRoot, serviceId);
-  return { paths, created };
+  return { paths, created, playwrightConfig: configResult };
 }
