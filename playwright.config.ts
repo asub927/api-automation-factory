@@ -5,8 +5,8 @@ import YAML from "yaml";
 import { assertEgressAllowed, loadEgressAllowlist } from "./src/inventory/manifest.js";
 
 /**
- * Auto-discover per-service Playwright projects from generated/<service>/{http,mcp}.
- * Propose bot need not edit this file when onboarding services (KTD9 path filter).
+ * Auto-discover per-service Playwright projects from generated/<service>/tests.
+ * Lane separation uses filename patterns (*.http.spec.ts / *.mcp.spec.ts).
  */
 function baseUrlFor(service: string): string | undefined {
   const envKey = `${service.toUpperCase().replace(/[^A-Z0-9]/g, "_")}_BASE_URL`;
@@ -34,6 +34,7 @@ function discoverProjects() {
   const projects: Array<{
     name: string;
     testDir: string;
+    testMatch: string | RegExp;
     use?: { baseURL?: string };
   }> = [];
 
@@ -43,13 +44,17 @@ function discoverProjects() {
 
   for (const service of readdirSync(generatedRoot, { withFileTypes: true })) {
     if (!service.isDirectory()) continue;
+    const testDir = join(generatedRoot, service.name, "tests");
+    if (!existsSync(testDir)) continue;
     const baseURL = baseUrlFor(service.name);
-    for (const lane of ["http", "mcp"] as const) {
-      const testDir = join(generatedRoot, service.name, lane);
-      if (!existsSync(testDir)) continue;
+    for (const lane of [
+      { name: "http", match: /.*\.http\.spec\.ts/ },
+      { name: "mcp", match: /.*\.mcp\.spec\.ts/ },
+    ] as const) {
       projects.push({
-        name: `${service.name}-${lane}`,
+        name: `${service.name}-${lane.name}`,
         testDir,
+        testMatch: lane.match,
         ...(baseURL ? { use: { baseURL } } : {}),
       });
     }
