@@ -1,1 +1,5 @@
-export { emitMcpSuites, assertNoSecretsInGenerated } from "./http.js";
+export {
+  emitMcpSuites,
+  assertNoSecretsInGenerated,
+  type SuiteEmitOptions,
+} from "./http.js";

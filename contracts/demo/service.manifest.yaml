@@ -11,3 +11,5 @@ mcp:
 mappingPath: support/mappings/demo.yaml
 exclusionPath: support/exclusions/demo.yaml
 allowlistPath: support/allowlists/demo.yaml
+workspace:
+  mode: fixture

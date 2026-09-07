@@ -73,12 +73,12 @@ describe("golden demo-schemas", () => {
 });
 
 describe("golden demo-suites", () => {
-  it("matches committed HTTP+MCP suite golden tree (U4)", () => {
+  it("matches committed flat tests/ suite golden tree (U2)", () => {
     const dir = mkdtempSync(join(tmpdir(), "golden-suites-"));
     try {
       const ir = demoIr();
-      emitHttpSuites(ir, join(dir, "http"));
-      emitMcpSuites(ir, join(dir, "mcp"));
+      emitHttpSuites(ir, dir);
+      emitMcpSuites(ir, dir);
       expectTreesEqual(dir, join(root, "tests/golden/demo-suites.golden"));
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -87,7 +87,7 @@ describe("golden demo-suites", () => {
 
   it("generated tree under generated/demo has no secret literals (AE10)", () => {
     compileService(root, "demo");
-    for (const lane of ["http", "mcp", "schemas"] as const) {
+    for (const lane of ["tests", "schemas"] as const) {
       const dir = join(root, "generated/demo", lane);
       if (!existsSync(dir)) continue;
       for (const file of listFilesRecursive(dir)) {

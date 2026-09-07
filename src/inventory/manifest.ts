@@ -22,6 +22,25 @@ const McpSourceSchema = z.object({
   command: z.string().optional(),
 });
 
+const WorkspaceTargetSchema = z
+  .object({
+    mode: z.enum(["fixture", "remote"]).optional(),
+    repo: z.string().min(1).optional(),
+    defaultBranch: z.string().min(1).optional(),
+    pathPrefix: z.string().min(1).optional(),
+  })
+  .superRefine((value, ctx) => {
+    const mode = value.mode ?? (value.repo ? "remote" : undefined);
+    if (mode === "fixture") return;
+    if (!value.repo) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "workspace.repo is required unless workspace.mode is fixture",
+        path: ["repo"],
+      });
+    }
+  });
+
 const ManifestSchema = z.object({
   serviceId: z.string().min(1),
   baseUrl: z.string().url(),
@@ -32,9 +51,11 @@ const ManifestSchema = z.object({
   mappingPath: z.string().optional(),
   exclusionPath: z.string().optional(),
   allowlistPath: z.string().optional(),
+  workspace: WorkspaceTargetSchema.optional(),
 });
 
 export type ServiceManifest = z.infer<typeof ManifestSchema>;
+export type WorkspaceTarget = z.infer<typeof WorkspaceTargetSchema>;
 
 export class SetupError extends Error {
   readonly failureClass = "setup" as const;
@@ -127,6 +148,14 @@ export function loadManifest(
     throw new SetupError(`invalid manifest: ${parsed.error.message}`);
   }
   const manifest = parsed.data;
+
+  const workspaceMode =
+    manifest.workspace?.mode ?? (manifest.workspace?.repo ? "remote" : undefined);
+  if (workspaceMode !== "fixture" && !manifest.workspace?.repo) {
+    throw new SetupError(
+      "workspace.repo is required unless workspace.mode is fixture",
+    );
+  }
 
   const allowlist = loadEgressAllowlist(repoRoot);
   assertEgressAllowed(manifest.baseUrl, allowlist, { allowHttpLocalhost: true });

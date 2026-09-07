@@ -5,9 +5,12 @@ import YAML from "yaml";
 import { assertEgressAllowed, loadEgressAllowlist } from "./src/inventory/manifest.js";
 
 /**
- * Auto-discover per-service Playwright projects from generated/<service>/{http,mcp}.
- * Propose bot need not edit this file when onboarding services (KTD9 path filter).
+ * Factory self-test Playwright config (U6 / R12).
+ * Discovers only the demo fixture under generated/demo/tests.
+ * Production suites land in app workspace repos under playwright/api/<serviceId>/.
  */
+const FACTORY_SELF_TEST_SERVICES = new Set(["demo"]);
+
 function baseUrlFor(service: string): string | undefined {
   const envKey = `${service.toUpperCase().replace(/[^A-Z0-9]/g, "_")}_BASE_URL`;
   let baseURL: string | undefined;
@@ -34,6 +37,7 @@ function discoverProjects() {
   const projects: Array<{
     name: string;
     testDir: string;
+    testMatch: string | RegExp;
     use?: { baseURL?: string };
   }> = [];
 
@@ -43,13 +47,18 @@ function discoverProjects() {
 
   for (const service of readdirSync(generatedRoot, { withFileTypes: true })) {
     if (!service.isDirectory()) continue;
+    if (!FACTORY_SELF_TEST_SERVICES.has(service.name)) continue;
+    const testDir = join(generatedRoot, service.name, "tests");
+    if (!existsSync(testDir)) continue;
     const baseURL = baseUrlFor(service.name);
-    for (const lane of ["http", "mcp"] as const) {
-      const testDir = join(generatedRoot, service.name, lane);
-      if (!existsSync(testDir)) continue;
+    for (const lane of [
+      { name: "http", match: /.*\.http\.spec\.ts/ },
+      { name: "mcp", match: /.*\.mcp\.spec\.ts/ },
+    ] as const) {
       projects.push({
-        name: `${service.name}-${lane}`,
+        name: `${service.name}-${lane.name}`,
         testDir,
+        testMatch: lane.match,
         ...(baseURL ? { use: { baseURL } } : {}),
       });
     }

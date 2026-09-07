@@ -7,20 +7,22 @@ artifact_contract: ce-unified-plan/v1
 artifact_readiness: implementation-ready
 product_contract_source: ce-brainstorm
 execution: code
-deepened: 2026-09-04
+revised: 2026-09-05
+planned: 2026-09-05
 ---
 
 # API Automation Factory - Plan
 
 ## Goal Capsule
 
-- **Objective:** Build a compile-first factory that turns MCP tool surfaces plus Spring Boot API contracts into deterministic Playwright suites (HTTP + live MCP calls) with Zod validation, proposed only via human-reviewed PRs, designed to scale across the API ecosystem.
-- **Product authority:** This plan owns the automation factory product shape (inventory model, emit behavior, trust model, coverage definition). Target Spring Boot services and MCP server implementations are inputs, not this plan's build scope.
+- **Objective:** Build a compile-first factory that turns MCP tool surfaces plus Spring Boot API contracts into deterministic Playwright suites (HTTP + live MCP calls) with Zod validation, proposed only via human-reviewed PRs into each **app workspace repo**, designed to scale across the API ecosystem without housing production suites in the agent/factory repo.
+- **Product authority:** This plan owns the automation factory product shape (inventory model, emit behavior, trust model, coverage definition, **suite landing home**). Target Spring Boot services, MCP server implementations, and app workspace repos are inputs/targets, not this plan's application-business build scope.
 - **Authority hierarchy:** Product Contract (R/A/F/AE/KD) → Planning Contract (KTD) → Implementation Units → Verification Contract → Definition of Done.
-- **Execution profile:** Greenfield TypeScript factory in this repository; CLI + CI operator surfaces; propose-only PR emission.
-- **Stop conditions:** Dual-lane emit + propose-only PR path proven against a fixture service; factory goldens and CI gates green; no auto-merge; LLM remaining optional/marginal.
-- **Open blockers:** None for planning. Load-bearing assumptions are recorded under Planning Contract Assumptions.
-- **Product Contract preservation:** Product Contract meaning and R1–R11 / KD1–KD7 IDs unchanged. Clarified Success Criteria (propose vs rollout completeness), added AE5–AE12 and F4–F7 for confirmed edge journeys and security gates, and recorded plan-time HOW under Planning Contract KTDs (including deepened security/IR boundaries).
+- **Execution profile:** TypeScript factory in this repository (compiler + tiny fixture/demo only); CLI + CI operator surfaces; propose-only draft PRs opened **directly on the mapped app workspace repo**.
+- **Stop conditions:** Dual-lane emit + propose-only PR path proven against a fixture that mirrors workspace landing; factory self-test goldens green; no auto-merge; LLM remaining optional/marginal; no production service suites committed in this factory repo.
+- **Open blockers:** None. Deferred planning questions Q1/Q2/Q4 remain non-blocking (mapping heuristics, auth CI injection detail, Spring artifact preference).
+- **Product Contract preservation:** Product Contract unchanged ("Product Contract unchanged" — KD1–KD8 / R1–R15 / AE1–AE15 / F1–F8 meaning retained). Planning sections below replace superseded in-repo `generated/` HOW.
+- **Summary:** Suites land in app-workspace Playwright npm workspaces; factory proposes draft PRs there only; this repo keeps compiler + fixture/demo.
 
 ---
 
@@ -28,11 +30,13 @@ deepened: 2026-09-04
 
 ### Summary
 
-An ecosystem-scale API automation factory compiles MCP definitions and Spring Boot contracts into deterministic Playwright tests with Zod checks for both HTTP endpoints and live MCP tool calls. It opens propose-only PRs for human review. OpenAI assists only at the margins (auth wiring, unmapped leftovers), not as free-form suite authorship.
+An ecosystem-scale API automation factory compiles MCP definitions and Spring Boot contracts into deterministic Playwright tests with Zod checks for both HTTP endpoints and live MCP tool calls. It opens propose-only draft PRs for human review on the **app workspace repo** that aggregates UI/API components as git submodules. Suites land under that workspace's Playwright npm workspaces (`playwright/` root + `ui` + `api`), not in this agent/factory codebase. OpenAI assists only at the margins (auth wiring, unmapped leftovers), not as free-form suite authorship.
+
+**Scoping synthesis (confirmed):** Full landing/propose change is in scope—layout, scaffold validation, external draft propose, factory limited to compiler + fixture/demo. Tests cover emit layout, scaffold failure before PR, and workspace-targeted propose. Factory does not author UI tests. Support fixtures are **vendored into** each workspace propose. Existing in-repo `generated/` demos are **demoted to factory self-test** (not production landing). v1 includes **real draft PRs** against the mapped workspace remote.
 
 ### Problem Frame
 
-Teams already invest in Playwright at the UI layer and only touch APIs through integration paths. Those APIs are now exposed as MCP servers consumed by agentic apps, so silent contract breaks hit agents rather than a human clicking through a UI. Manual or UI-driven coverage cannot keep pace with the full MCP surface across the ecosystem.
+Teams already invest in Playwright at the UI layer and only touch APIs through integration paths. Those APIs are now exposed as MCP servers consumed by agentic apps, so silent contract breaks hit agents rather than a human clicking through a UI. Manual or UI-driven coverage cannot keep pace with the full MCP surface across the ecosystem. Parking every service's generated API suites inside the agent/factory repo does not scale: review, ownership, and maintenance concentrate in the wrong place.
 
 ### Key Decisions
 
@@ -41,8 +45,9 @@ Teams already invest in Playwright at the UI layer and only touch APIs through i
 - KD3. Propose-only trust model — Factory never auto-merges generated suites; humans review and merge. `(session-settled: user-directed — chosen over auto-land and hybrid: review quality owns generated HTTP + MCP tests)` Governs R7.
 - KD4. Dual validation lanes — Every covered capability gets HTTP contract tests and live MCP tool-invocation tests, both Zod-validated. `(session-settled: user-directed — chosen over coverage-mapping-only or HTTP-only: success requires both lanes)` Governs R4, R5, R6.
 - KD5. Per-service auth profiles — Auth is configured per MCP/API service (OAuth, API key, basic, etc.), not a single shared login fixture. `(session-settled: user-directed — chosen over shared-only or env-token-only: ecosystem services differ)` Governs R9.
-- KD6. Deterministic identity — Product validates API/MCP contracts only; UI Playwright and agent/LLM evals stay outside. `(session-settled: user-directed — chosen over including UI or agent evals: UI remains a separate practice; agent evals are non-deterministic)` Governs Scope Boundaries.
+- KD6. Deterministic identity — Product validates API/MCP contracts only; UI Playwright content authorship and agent/LLM evals stay outside. `(session-settled: user-directed — chosen over including UI or agent evals: UI remains a separate practice; agent evals are non-deterministic)` Governs Scope Boundaries. (UI *workspace package presence* may be scaffold-stubbed per KD8; factory does not author UI tests.)
 - KD7. MCP coverage floor on drift — When Spring enrichment is missing or conflicts, MCP-defined tools and mapped endpoints still get proposed tests; Spring Zod richness is best-effort; MCP↔Spring drift is reported in the propose PR. Governs R3, R11.
+- KD8. App-workspace suite home — Generated dual-lane suites land only in the **app workspace repo** (components linked as git submodules), under a Playwright npm workspace layout; the factory/agent repo keeps compiler + tiny fixture/demo suites only. Factory opens draft PRs **directly** on that workspace repo (not on submodule component repos, not dual-writing into this factory repo). `(session-settled: user-directed — chosen over in-factory generated/ home, hybrid mirror, and local-checkout-only write: scale ownership out of the agent repo while preserving propose-only trust)` Governs R7, R10, R12–R15.
 
 ```mermaid
 flowchart TB
@@ -50,16 +55,18 @@ flowchart TB
   Spring[Spring Boot contracts] --> Inv
   Inv --> Emit[Compile Playwright + Zod suites]
   Auth[Per-service auth profiles] --> Emit
-  Emit --> PR[Propose-only PR per bounded unit]
+  Emit --> Scaffold[API-scoped playwright workspace scaffold + validation]
+  Scaffold --> PR[Draft propose PR on app workspace repo]
   PR --> Human[Human review and merge]
 ```
 
 ### Actors
 
-- A1. SDET / QA automation owner — primary consumer; reviews propose PRs and maintains auth profiles / exclusions.
+- A1. SDET / QA automation owner — primary consumer; reviews propose PRs and maintains auth profiles / exclusions; owns UI Playwright consolidation into `playwright/ui` when adopting the workspace model.
 - A2. API / MCP service owner — supplies Spring Boot and MCP sources; responds to drift findings.
-- A3. CI / quality gate — runs merged deterministic suites against target environments.
-- A4. Automation factory — compiles inventory, emits suites, opens propose PRs.
+- A3. CI / quality gate — runs merged deterministic suites against target environments (in the app workspace repo after merge).
+- A4. Automation factory — compiles inventory, emits suites, scaffolds API-scoped Playwright workspace pieces when needed, opens propose PRs on the mapped app workspace repo.
+- A5. App workspace repo — git repo that composes UI/API/data-api (etc.) as submodules and hosts the root `playwright/` npm workspace where suites live.
 
 ### Requirements
 
@@ -80,35 +87,42 @@ flowchart TB
 - R10. Propose PRs are bounded (for example per service or equivalent reviewable unit) so ecosystem-scale emit stays reviewable under R7.
 - R11. When contracts are incomplete for compile-first emit, the factory still proposes what it can and lists uncovered tools/endpoints and MCP↔Spring drift findings explicitly in the PR.
 
+**Suite landing and Playwright workspace**
+
+- R12. Production generated suites for real services must not be committed as the long-term home in this factory/agent repository; this repo may retain only compiler code plus tiny fixture/demo suites used to self-test the factory.
+- R13. For each targeted service, the factory opens its draft propose PR only against the mapped **app workspace repo** (A5), never against submodule component repos for generated suite landing.
+- R14. Emitted API suites follow the workspace layout: `playwright/` root package (shared Playwright dependency) with `ui` and `api` workspace packages; factory emit targets `playwright/api/<service-id>/tests/*.http.spec.ts` and `*.mcp.spec.ts`, with Zod schemas under `playwright/api/<service-id>/schemas/`. `<service-id>` comes from the factory manifest (stable id for multi-service workspaces), not a raw git remote name.
+- R15. On first onboard, the factory may scaffold API-scoped Playwright workspace pieces in the propose PR (root workspace wiring + `api` package). It may create **empty `ui` directories/package stubs if missing**, but must not author UI tests or UI-specific dependencies. Scaffold shape must pass **scaffolding validation** before propose succeeds.
+
 ### Key Flows
 
 - F1. Full-surface propose for a service
-  - **Trigger:** Operator runs the factory against one or more MCP servers and their Spring Boot codebases.
-  - **Actors:** A1, A2, A4
-  - **Steps:** Ingest MCP defs and Spring contracts; merge inventory; compile HTTP + MCP Playwright/Zod suites; attach auth profiles; open bounded propose PR including uncovered list and drift findings.
-  - **Outcome:** Reviewable PR covering the service's MCP surface and mapped endpoints without auto-merge.
-  - **Covered by:** R1–R5, R7, R9–R11
+  - **Trigger:** Operator runs the factory against one or more MCP servers and their Spring Boot codebases for a service mapped to an app workspace repo.
+  - **Actors:** A1, A2, A4, A5
+  - **Steps:** Ingest MCP defs and Spring contracts; merge inventory; compile HTTP + MCP Playwright/Zod suites; attach auth profiles; ensure/validate Playwright workspace scaffold (F8); open bounded draft propose PR **on the app workspace repo** including uncovered list and drift findings.
+  - **Outcome:** Reviewable PR on A5 covering the service's MCP surface and mapped endpoints without auto-merge; no suite landing PR on submodule repos.
+  - **Covered by:** R1–R5, R7, R9–R15
 
 - F2. Contract change regeneration
   - **Trigger:** MCP or Spring contracts change for an already-covered service.
-  - **Actors:** A1, A4
-  - **Steps:** Recompile affected suites; open propose PR with stable, reviewable diffs; report new drift or coverage gaps.
-  - **Outcome:** Humans merge updates; merged suites remain the CI source of truth.
-  - **Covered by:** R1, R7, R8, R10, R11
+  - **Actors:** A1, A4, A5
+  - **Steps:** Recompile affected suites; open propose PR on the same app workspace repo with stable, reviewable diffs; report new drift or coverage gaps.
+  - **Outcome:** Humans merge updates in A5; merged suites there remain the CI source of truth.
+  - **Covered by:** R1, R7, R8, R10–R14
 
 - F3. CI gate after merge
-  - **Trigger:** Proposed suite is merged.
-  - **Actors:** A1, A3
-  - **Steps:** CI runs deterministic HTTP and MCP tests with configured auth profiles; failures block on contract breaks.
+  - **Trigger:** Proposed suite is merged in the app workspace repo.
+  - **Actors:** A1, A3, A5
+  - **Steps:** Workspace CI runs deterministic HTTP and MCP tests with configured auth profiles; failures block on contract breaks.
   - **Outcome:** Breaking API/MCP changes are caught before agentic consumers depend on them.
-  - **Covered by:** R4, R5, R6, R9
+  - **Covered by:** R4, R5, R6, R9, R14
 
 - F4. Service onboarding
-  - **Trigger:** A1 registers a new service for factory coverage.
-  - **Actors:** A1, A4
-  - **Steps:** Create service manifest (MCP source, OpenAPI/Spring source, auth profile id, optional mapping/exclusions); run F1 for that service id.
-  - **Outcome:** First propose PR for the service without inventing ad-hoc CLI flags per run.
-  - **Covered by:** R2, R9, R10
+  - **Trigger:** A1 registers a new service for factory coverage, including its app workspace mapping and service-id.
+  - **Actors:** A1, A4, A5
+  - **Steps:** Create service manifest (MCP source, OpenAPI/Spring source, auth profile id, workspace target, service-id, optional mapping/exclusions); run F1 for that service id.
+  - **Outcome:** First propose PR on the correct app workspace without inventing ad-hoc CLI flags per run.
+  - **Covered by:** R2, R9, R10, R13–R15
 
 - F5. Auth profile create / rotate
   - **Trigger:** A1 adds or rotates credentials for a service.
@@ -131,6 +145,13 @@ flowchart TB
   - **Outcome:** Drift is actionable without an automated ping loop in v1.
   - **Covered by:** R3, R11, KD7
 
+- F8. Playwright workspace scaffold + validation
+  - **Trigger:** F1/F2 runs against an app workspace missing required Playwright workspace pieces, or any propose that must confirm landing shape.
+  - **Actors:** A4, A5
+  - **Steps:** Detect missing `playwright/` root / `api` workspace / empty `ui` stubs; add API-scoped scaffold (and empty `ui` dirs if absent); run scaffolding validation; fail propose before opening a PR if validation fails; on success include scaffold + generated suites in the draft PR.
+  - **Outcome:** Propose PRs only land when the workspace shape required by R14–R15 is valid; UI stubs remain empty of UI test content.
+  - **Covered by:** R12–R15
+
 ### Acceptance Examples
 
 - AE1. MCP tool with rich Spring DTO
@@ -146,10 +167,10 @@ flowchart TB
   - **Then:** A coverage proposal for that MCP tool is still included; Spring Zod richness may be thinner; drift/gap is listed in the PR; nothing is auto-merged
 
 - AE3. Human trust boundary
-  - **Covers:** R7, R10
+  - **Covers:** R7, R10, R13
   - **Given:** The factory emits suites for multiple services
   - **When:** Emit completes
-  - **Then:** Changes appear only as bounded propose PRs; no branch is force-merged by the factory
+  - **Then:** Changes appear only as bounded draft propose PRs on mapped app workspace repos; no branch is force-merged by the factory; submodule component repos are not suite-landing PR targets
 
 - AE4. Success bar for a targeted surface
   - **Covers:** R6
@@ -182,10 +203,10 @@ flowchart TB
   - **Then:** No new propose PR is opened (or empty-diff PR is skipped)
 
 - AE9. Generated file ownership
-  - **Covers:** R1, F2
-  - **Given:** A generated suite file was hand-edited
+  - **Covers:** R1, F2, R14
+  - **Given:** A generated suite file under `playwright/api/<service-id>/` was hand-edited
   - **When:** The next regeneration runs
-  - **Then:** Only generated paths are overwritten; hand-written support/fixtures are preserved
+  - **Then:** Only generated paths are overwritten; hand-written support/fixtures outside overwrite-owned paths are preserved
 
 - AE10. Secret non-leak
   - **Covers:** R7, R9
@@ -194,10 +215,10 @@ flowchart TB
   - **Then:** Setup fails before propose; generated goldens contain no Authorization/bearer/token literals
 
 - AE11. Propose least privilege
-  - **Covers:** R7, R10
-  - **Given:** The propose path runs against a mocked GitHub client / reviewed workflow
+  - **Covers:** R7, R10, R13
+  - **Given:** The propose path runs against a mocked GitHub client / reviewed workflow for the app workspace repo
   - **When:** Emit completes
-  - **Then:** Only draft PR create/update on `factory/<service-id>` occurs; no merge, approve, or default-branch push
+  - **Then:** Only draft PR create/update on the workspace factory branch occurs; no merge, approve, or default-branch push; no suite commits targeting submodule remotes
 
 - AE12. Egress allowlist
   - **Covers:** R9
@@ -205,12 +226,31 @@ flowchart TB
   - **When:** Propose or suite setup runs
   - **Then:** Setup-class failure occurs before any HTTP or MCP network call
 
+- AE13. Workspace landing path
+  - **Covers:** R12, R13, R14
+  - **Given:** Service `data-api` is mapped to app workspace repo `x-app` with service-id `data-api`
+  - **When:** The factory proposes
+  - **Then:** The draft PR is on `x-app` and adds/updates `playwright/api/data-api/tests/*.http.spec.ts`, `*.mcp.spec.ts`, and `playwright/api/data-api/schemas/`; this factory repo gains no new production suite files for that service
+
+- AE14. First-time API-scoped scaffold
+  - **Covers:** R15, F8, KD8
+  - **Given:** `x-app` has no `playwright/` workspace yet
+  - **When:** The factory proposes for a mapped service
+  - **Then:** The PR includes API-scoped scaffold (root + `api` workspace) and may include empty `ui` stubs; it does not add UI test content or UI-specific dependency trees; scaffolding validation passed
+
+- AE15. Scaffold validation failure
+  - **Covers:** R15, F8
+  - **Given:** Scaffold would leave the Playwright workspace shape invalid (missing required workspace wiring or invalid `api/<service-id>` landing paths)
+  - **When:** The factory attempts propose
+  - **Then:** Propose fails with a setup/scaffold-class error and does not open a PR
+
 ### Success Criteria
 
-- **Propose completeness:** Targeted MCP surface is represented in a propose PR with dual-lane emit where mapping exists, MCP floor where it does not, plus explicit uncovered/drift lists (KD7, R11).
-- **Rollout completeness (R6 / AE4):** For every in-scope, non-excluded capability with an HTTP mapping, both HTTP and MCP validations exist in the merged suite. Unmapped tools remain R6 blockers until mapped or excluded.
+- **Propose completeness:** Targeted MCP surface is represented in a propose PR on the correct app workspace repo with dual-lane emit where mapping exists, MCP floor where it does not, plus explicit uncovered/drift lists (KD7, R11, R13).
+- **Rollout completeness (R6 / AE4):** For every in-scope, non-excluded capability with an HTTP mapping, both HTTP and MCP validations exist in the merged suite in the app workspace. Unmapped tools remain R6 blockers until mapped or excluded.
+- **Landing correctness (KD8 / R12–R15):** Real-service suites are reviewable and mergeable only via app workspace PRs under `playwright/api/<service-id>/…`; the factory repo does not become the maintenance home for those suites.
 - Propose PRs remain human-reviewable (bounded units, explicit uncovered/drift lists).
-- CI on merged suites fails on breaking contract changes without requiring UI journeys; auth/transport failures are labeled separately from contract failures.
+- CI on merged workspace suites fails on breaking contract changes without requiring UI journeys; auth/transport failures are labeled separately from contract failures.
 - LLM involvement stays optional/marginal; compile path works when contracts are present.
 
 ### Scope Boundaries
@@ -220,8 +260,10 @@ flowchart TB
 - Compiling deterministic Playwright API and MCP tool tests with Zod validation
 - Merging MCP + Spring inventories for coverage
 - Per-service auth profiles
-- Propose-only PR emission at ecosystem scale (phased rollout allowed)
+- Propose-only draft PR emission to **app workspace repos** at ecosystem scale (phased rollout allowed)
+- API-scoped Playwright workspace scaffold + scaffolding validation (including empty `ui` stubs when missing)
 - CLI operator surface and CI workflows that wrap the same CLI
+- Tiny fixture/demo suites in this factory repo used only to prove the compiler
 
 **Deferred for later**
 
@@ -229,6 +271,7 @@ flowchart TB
 - Cross-service orchestration scenarios beyond per-capability HTTP/MCP contracts
 - Exposing the factory itself as MCP tools / agent operator surface (CLI + CI first)
 - Optional provider-side fuzz (e.g. Schemathesis) as a complementary gate
+- Factory-driven migration of existing UI Playwright trees into `playwright/ui` (team-owned; factory may only stub empty `ui` dirs)
 
 **Deferred to Follow-Up Work**
 
@@ -238,21 +281,25 @@ flowchart TB
 
 **Outside this product's identity**
 
-- UI / browser Playwright generation or maintenance
+- UI / browser Playwright test authorship or UI dependency maintenance by the factory
 - Agent-behavior evaluation or non-deterministic LLM evals
 - Load/performance testing and security fuzzing as primary outputs
-- Replacing existing UI Playwright practice
+- Replacing existing UI Playwright practice (consolidation into `playwright/ui` is an adoption convention, not factory-authored UI coverage)
 - Auto-merge of factory PRs; OAuth consent / secret minting by the factory
 - Storing secret values in git or generated artifacts; invoking non-allowlisted mutating MCP tools; free-form LLM suite authorship
+- Using this factory/agent repo as the durable home for production service suites
+- Opening generated-suite PRs into submodule component repositories
 
 ### Dependencies / Assumptions
 
 - **Assumption:** Primary user is the SDET/QA automation owner (A1); correct if a different role owns propose-PR review.
-- **Assumption:** Target APIs are reachable as both HTTP services and MCP servers in environments where tests run (default: non-prod staging URLs in profiles).
-- **Assumption:** Spring Boot codebases expose extractable OpenAPI (preferred) or equivalent contracts, and MCP server definitions are available as factory inputs.
-- **Assumption:** KD7 (MCP coverage floor) and R11 (partial propose + uncovered list) are accepted defaults from synthesis call-outs.
-- **Dependency:** Per-service credentials/secrets exist for auth profiles used in CI after merge.
-- **Dependency:** This repository is greenfield; factory implementation lands here, while Spring/MCP sources may live in external repos.
+- **Assumption:** Target APIs are reachable as both HTTP services and MCP servers in environments where tests run.
+- **Assumption:** Spring Boot codebases (or extractable contracts from them) and MCP server definitions are available as factory inputs.
+- **Assumption:** KD7 (MCP coverage floor) and R11 (partial propose + uncovered list) remain accepted defaults.
+- **Assumption:** Each covered service can be mapped to exactly one app workspace repo that uses git submodules for components and will host `playwright/`.
+- **Dependency:** Per-service credentials/secrets exist for auth profiles used in CI after merge in the app workspace.
+- **Dependency:** Factory has credentials/permissions to open draft PRs on target app workspace repos (path-restricted; no auto-merge).
+- **Dependency:** Prior in-repo `generated/` spike on this factory repo is a transitional self-test/demo path; product suite landing follows KD8.
 
 ### Outstanding Questions
 
@@ -260,11 +307,17 @@ flowchart TB
 
 - None.
 
-**Deferred to Implementation**
+**Deferred (non-blocking)**
 
-- Exact MCP JSON Schema subset supported in IR normalization (tune against fixture + first real service).
-- Whether CI propose workflow regenerates then commits on `factory/<service>` vs relying solely on local CLI commits (default remains commit-on-propose to factory branch).
-- Final verb-heuristic details for mutation classification beyond fail-closed unknown + metadata/annotation preference (KTD8).
+- Q1. How MCP tools are mapped to HTTP endpoints when names/paths diverge (conventions, annotations, manual mapping table). Existing heuristic + override table remains; refine during implementation against fixtures.
+- Q2. Exact secret injection wiring inside each app workspace CI (env names stay in auth profiles; workspace workflows own value injection).
+- Q4. Which Spring artifacts are preferred when multiple exist (default remains exported OpenAPI lockfile; AST fallback later).
+
+**Resolved in Planning Contract**
+
+- Q3 → KTD1, KTD4 (manifest workspace target + scaffold validation rules).
+- Q5 → KTD2, KTD5 (CLI propose targets workspace remote; CI wraps same CLI).
+- Q6 → KTD3 (in-repo `generated/` demoted to fixture/self-test only).
 
 ---
 
@@ -272,369 +325,187 @@ flowchart TB
 
 ### Assumptions
 
-- Stack is Node 22 LTS + TypeScript ESM + Playwright + Zod 4 + Vitest for factory unit/golden tests.
-- Spring contract primary input is exported OpenAPI 3.x (springdoc CI artifact); controller/DTO parsing is fallback only.
-- Operator surface for v1 is CLI + wrapping GitHub Actions; factory-as-MCP-tools is deferred.
-- Default PR bounding unit is one propose PR per service (batch CLI may open N PRs).
-- MCP↔HTTP mapping uses heuristics (`operationId` / tool name / path) plus a per-service override table; unmapped tools stay on the MCP coverage floor.
-- Generated suites are committed under dedicated generated paths; hand edits live only under support/fixtures.
-- Live MCP invokes read/idempotent tools by default; mutating tools require an explicit allowlist or are intentionally uncovered.
-- Emit/compile is offline from static defs + OpenAPI artifacts; live HTTP/MCP calls happen in CI (and optional local smoke).
-- External research was load-bearing for OpenAPI→Zod spine, MCP TS SDK testing, springdoc export, and propose-only PR automation.
-- Coverage IR is versioned (`coverage-ir/v1`); emit refuses unknown major versions.
-- Propose no-delta compares IR content hash + generator package versions, not only empty git diffs.
-- Default: commit generated output from propose CLI onto `factory/<service-id>` only (never main).
+- App workspace repos can grant the factory a fine-scoped GitHub App/PAT that opens **draft** PRs with path filters; no auto-merge permission.
+- A local **workspace fixture** (checked into this factory repo under `fixtures/`) mirrors the Playwright npm workspace shape so unit/integration tests do not need live GitHub.
+- Existing compile/inventory/auth IR path (`src/inventory/*`, `src/emit/*`, `src/auth/*`) remains the emit spine; this plan changes **landing target + layout + propose transport**, not the dual-inventory compiler thesis.
+- Node 22 + TypeScript ESM + Playwright + Zod + Vitest remain the factory toolchain.
+- External research was not load-bearing; decisions follow the Product Contract and current in-repo propose/emit patterns.
 
 ### Key Technical Decisions
 
-- KTD1. TypeScript greenfield stack — Node 22 + Playwright APIRequestContext + Zod 4 + Vitest. Chosen over Python-centric generators so HTTP and MCP lanes share one runtime with the official MCP TypeScript client. Governs U1.
-- KTD2. Exported OpenAPI as Spring input — Prefer springdoc `/v3/api-docs` (or build-time export) committed/fetched as `contracts/<service>/openapi.yaml`. Controller AST parsing is fallback only when export is unavailable and must record lower confidence in the PR. `(session-settled: user-approved — chosen over controller-parse-first: shared OAS artifact feeds Zod, drift, and MCP mapping)` Governs R3, U2.
-- KTD3. Service manifest as onboarding unit — Each service has a manifest naming MCP source, OpenAPI source, auth profile id, mapping overrides, exclusions, and mutation allowlist. CLI `factory propose --service <id>` reads it. Governs R10, F4, U2.
-- KTD4. Three-layer emit — Normalized coverage IR → Zod schemas → Playwright HTTP + MCP tests. Same IR feeds both lanes; deterministic sorted emit for stable diffs. Inventory is the sole IR writer; emit is a pure function of IR + support overlays. Governs R1, R4, R5, U3–U4.
-- KTD5. Mapping strategy — Heuristic match plus `support/mappings/<service>.yaml` overrides; never infer solely from free-text descriptions. Unmapped → MCP floor + uncovered list (AE5). Override pairs should warn on method/schema incompatibility before emit. `(session-settled: user-approved — chosen over convention-only or manual-only)` Governs R2, R5, R11, U2–U3.
-- KTD6. Generated vs support separation — Generated files under `generated/` carry ownership banners and are overwrite-safe; auth fixtures, matchers, and overrides live under `support/`. Generated specs may import only `support/fixtures/*` and `generated/<service>/schemas/*`. Governs AE9, U4.
-- KTD7. Auth profiles as YAML with env refs — Profiles declare auth type and secret *names* only (`^[A-Z0-9_]+$`); CI injects values. Reject profiles containing value-like secret material. Never log resolved secrets; scrub auth headers from Playwright traces. Generated tests reference profile **id**; env names resolve only at runtime in support fixtures. Missing required secret → auth-class failure (AE6, AE10). Governs R9, U4–U5.
-- KTD8. Mutation allowlist for live MCP — Non-allowlisted mutating tools are not invoked live (AE7). Unknown/ambiguous tools classify as mutating (fail closed). Classifier preference: explicit metadata > annotation > verb heuristic; output is an IR field. `(session-settled: user-approved — chosen over invoke-all-tools: CI safety)` Governs R4, F6, U4.
-- KTD9. Propose-only via CLI + create-pull-request — `factory propose` compiles, writes suites, and opens/updates a draft PR on `factory/<service-id>` using a dedicated GitHub App or fine-scoped PAT with peter-evans/create-pull-request (or equivalent); never auto-merge; never push default branch; path-restricted to `generated/<service>/**` plus report metadata. Concurrent proposes: last-write-wins with force-with-lease on that factory branch only. One branch/PR per service; no-delta skips PR (AE8, AE11). Governs R7, R10, U5.
-- KTD10. CLI-first operator surface — Machine-readable reports and exit codes so CI wraps the same path; factory MCP operator tools deferred. `(session-settled: user-approved — chosen over factory-MCP-now)` Governs F1, U1, U5.
-- KTD11. Zod generation spine — Prefer `@hey-api/openapi-ts` Zod plugin (or equivalent OAS→Zod) for rich HTTP schemas. For mapped capabilities, HTTP and MCP lanes import the **same** generated schema module; MCP-only tools use thin/best-effort schemas under KD7. Governs R3, R5, U3.
-- KTD12. Failure taxonomy — Classify `contract` | `auth` | `transport` | `setup` in suite assertions (support helpers) and CI annotations. Propose/operator failures use `setup` (manifest/git/gh). Only contract mismatches are the product quality signal. Governs F3, AE6, U5–U6.
-- KTD13. Egress allowlist — Manifest `baseUrl` / MCP endpoint must match allowlisted non-prod/fixture host patterns; disallowed hosts fail setup before network (AE12). Prod URLs require an explicit separate profile + human flag (default deny). Governs R9, U2, U4, U6.
-- KTD14. LLM margin boundary — Allowed: auth wiring *hints* and unmapped leftover *suggestions* in PR body only, with redacted inputs (no env values). Forbidden: writing IR, Zod, Playwright sources, allowlists, profiles, or merges. Default off. Governs R8, U5.
-- KTD15. Contracts lock policy — Manifest declares OpenAPI mode `lockfile` or `fetch` plus ref; PR body always records digest/URI used so F2 diffs stay attributable. Governs R3, F2, U2.
+- KTD1. Manifest carries workspace target — Extend `contracts/<serviceId>/service.manifest.yaml` with `workspace: { repo, defaultBranch?, pathPrefix? }` (repo = `owner/name` or clone URL). `serviceId` remains the stable folder id under `playwright/api/<serviceId>/`. Reject propose when `workspace.repo` is missing for non-fixture services. Governs R13–R14, F4, U1.
+- KTD2. Direct workspace propose transport — `factory propose` compiles, writes into a checkout of the mapped workspace repo (temp clone or explicit `--workspace-dir`), runs scaffold validation, then opens/updates draft PR `factory/<serviceId>` with path globs limited to `playwright/**` for that change set. Never opens suite PRs on submodule remotes. Extends `GitHubProposeClient` with repo-scoped operations; keep `RecordingGitHubClient` for tests. Governs R7, R13, F1, F2, U5.
+- KTD3. Dual emit roots — **Production emit root** is the workspace checkout: `playwright/api/<serviceId>/{tests,schemas}/`. **Factory self-test root** stays local under `generated/<serviceId>/` **only** for `demo` (and similarly marked fixture services) with the **same relative layout adapters** so goldens prove the compiler without pretending this repo is the suite home. jsonplaceholder (or other non-fixture samples) must not remain a production-like committed suite tree in this repo; demote to fixture/docs or remove from default CI. Governs R12, R14, U2, U6.
+- KTD4. API-scoped scaffold + validation gate — Before propose, ensure workspace has Playwright npm workspaces: root `playwright/package.json` (shared `playwright` dep + workspaces), `api/package.json`, and empty `ui/` stubs if missing. Validation fails propose (setup-class) when required workspace wiring or `api/<serviceId>` landing paths are invalid. Factory never authors UI tests or UI-specific dependency trees. Governs R15, F8, AE14–AE15, U4.
+- KTD5. Vendored support kit — Each workspace propose includes a small overwrite-owned support package under `playwright/api/support/` (or `playwright/support/`) with auth/expectZod/mcpClient helpers and import paths rewritten for the new depth. Prefer vendoring over publishing an npm package in v1 so workspaces stay self-contained. Hand-owned overrides live outside overwrite banners. Governs R14, AE9, U3.
+- KTD6. Spec naming under flat tests/ — Emit `playwright/api/<serviceId>/tests/<tool>.http.spec.ts` and `<tool>.mcp.spec.ts`; schemas at `playwright/api/<serviceId>/schemas/`. Retire `*.generated.spec.ts` under `http/`+`mcp/` lane folders for workspace landing (fixture adapter may map old golden trees during migration). Governs R14, U2.
+- KTD7. Path-filtered draft-only propose — PR body keeps coverage/drift/uncovered sections; bot cannot merge/approve; concurrent updates last-write-wins with force-with-lease on `factory/<serviceId>` only; no-delta skips PR. Factory-repo workflows that currently path-filter `generated/**` for production services are updated to fixture-only or removed from default suite gates. Governs R7, R10, AE11, U5, U6.
 
 ### High-Level Technical Design
 
 ```mermaid
 flowchart TB
-  Manifest[Service manifest] --> MCPIn[MCP ingest]
-  Manifest --> OASIn[OpenAPI ingest]
-  MCPIn --> IR[Coverage IR + drift model]
-  OASIn --> IR
-  Map[Mapping overrides] --> IR
-  IR --> Zod[Zod schema emit]
-  Zod --> HTTP[HTTP Playwright emit]
-  Zod --> MCPTest[MCP Playwright emit]
-  Auth[Auth profiles] --> HTTP
-  Auth --> MCPTest
-  Allow[Mutation allowlist] --> MCPTest
-  HTTP --> Propose[factory propose]
-  MCPTest --> Propose
-  Propose --> PR[Draft PR per service]
-  PR --> Human[Human merge]
-  Human --> CI[CI dual-lane gate]
+  Manifest[Service manifest + workspace.repo] --> Compile[Compile IR + Zod]
+  Compile --> Checkout[Checkout / clone app workspace]
+  Checkout --> Scaffold[Scaffold + validate playwright workspaces]
+  Scaffold --> Emit[Emit api/serviceId tests + schemas + support kit]
+  Emit --> DraftPR[Draft PR on workspace factory/serviceId]
+  DraftPR --> Human[Human merge in workspace]
+  Human --> WsCI[Workspace CI dual-lane]
 ```
 
-```mermaid
-sequenceDiagram
-  participant A1 as SDET
-  participant CLI as factory CLI
-  participant GH as GitHub PR
-  participant CI as CI
-  A1->>CLI: propose --service billing
-  CLI->>CLI: ingest MCP + OpenAPI
-  CLI->>CLI: merge IR + drift + map
-  CLI->>CLI: emit Zod + HTTP + MCP suites
-  CLI->>GH: open/update draft PR
-  Note over GH: uncovered + drift in body
-  A1->>GH: review and merge
-  GH->>CI: run HTTP + MCP projects
-  CI-->>A1: contract/auth/transport result
-```
+Factory self-test path: compile → emit into local fixture/`generated/demo` with layout adapter → Vitest goldens / optional local Playwright — no workspace PR.
 
-Artifact lifecycle: contracts lock → IR (`coverage-ir/v1`) → generated → draft PR → human merge to main → CI dual-lane gate. Human-only gates: merge, secret minting, mutation allowlist, exclusions, mapping overrides, prod host allowlist.
-
-### System-Wide Impact
-
-- **Package interfaces:** Versioned Coverage IR is the only inventory→emit boundary; machine-readable report schema is shared by CLI stdout, PR body, and CI annotations; service id joins manifest, auth profile, Playwright projects, and branch names.
-- **Failure propagation:** Corrupt MCP defs fail setup before git write; missing OpenAPI continues with KD7 drift; auth/transport must be labeled in `support/` assertion helpers, not only after-the-fact reports; pin generator versions to avoid propose/CI skew.
-- **Generated artifact lifecycle:** States are emitted → proposed → merged → CI-validated → stale on upstream contract change. No-delta uses IR hash + generator versions. Dirty hand-edits under `generated/` are clobbered and called out in the PR.
-- **Human-only:** Merge, secret provisioning, allowlist/exclusion/override edits, first staging onboarding, workflow/bot permission changes.
-- **Agent-native Later:** Factory MCP operator tools; auto-regen-on-commit; multi-role auth; Pact/oasdiff required gates.
-- **Agent-native Never:** Auto-merge; UI Playwright product; agent/LLM evals; LLM suite authorship; prose-invented mappings; secrets in generated output.
-
-### Output Structure
+### Output Structure (targets)
 
 ```text
-api-automation-factory/
-├── package.json
-├── tsconfig.json
-├── playwright.config.ts
-├── vitest.config.ts
-├── src/
-│   ├── cli/                    # factory CLI entrypoints
-│   ├── ingest/                 # MCP + OpenAPI adapters
-│   ├── inventory/              # IR, merge, drift, mapping
-│   ├── emit/                   # Zod + Playwright emitters
-│   ├── auth/                   # profile loader
-│   ├── propose/                # PR body + git/gh integration
-│   └── report/                 # machine-readable reports + failure classes
-├── contracts/                  # per-service OpenAPI + MCP lock/defs
-│   └── <service>/
-├── support/
-│   ├── profiles/               # auth YAML (env refs only)
-│   ├── mappings/
-│   ├── exclusions/
-│   └── fixtures/               # Playwright fixtures / matchers
-├── generated/                  # overwrite-owned emitted suites + schemas
-│   └── <service>/{http,mcp,schemas}/
-├── fixtures/demo-service/      # local fixture for goldens + dual-lane proof
-├── tests/
-│   ├── unit/                   # factory unit tests
-│   └── golden/                 # emit golden trees
-└── .github/workflows/
-    ├── factory-propose.yml
-    ├── factory-ci.yml
-    └── suites.yml
+# App workspace repo (propose target)
+playwright/
+  package.json                 # workspaces: ui, api; shared playwright dep
+  playwright.config.ts         # discovers api/*/tests
+  ui/                          # empty stub ok
+    package.json
+  api/
+    package.json
+    support/                   # vendored overwrite-owned helpers
+    <serviceId>/
+      tests/
+        <tool>.http.spec.ts
+        <tool>.mcp.spec.ts
+      schemas/
+        <tool>.ts
+
+# Factory repo (this codebase)
+contracts/<serviceId>/service.manifest.yaml   # + workspace.repo
+src/emit/*                                    # layout-aware emitters
+src/propose/*                                 # workspace checkout + draft PR
+src/scaffold/*                                # scaffold + validate
+fixtures/workspace-app/                       # local mirror for tests
+generated/demo/                               # fixture self-test only
 ```
-
-### Alternative Approaches Considered
-
-- **LLM-first suite authorship** — Rejected per KD1/R8; non-deterministic coverage and weak review diffs.
-- **Inventory-first product without emit** — Rejected per KD1; coverage maps alone do not catch contract breaks in CI.
-- **Pact/BDCT as primary** — Deferred; valuable later but heavier than schema-compiled Playwright+Zod for v1 dual lanes.
-- **Factory MCP operator tools in v1** — Deferred (KTD10); would add a second control plane before CLI/CI trust is proven.
 
 ### Risks & Dependencies
 
 | Risk | Mitigation |
 |------|------------|
-| Greenfield — no local patterns | Lock stack in U1; fixture service + goldens before multi-service rollout |
-| hey-api / Zod 4 / MCP SDK churn | Pin generator versions; isolate generated imports; record versions in PR body |
-| Live MCP mutates shared staging data | Fail-closed mutation class + human allowlist (KTD8); staging-only bases (KTD13) |
-| Secret leakage via emit/PR/LLM | Names-only profiles; secret-pattern gate on `generated/`; LLM redaction (KTD7, KTD14, AE10) |
-| Over-privileged propose bot | Dedicated App/PAT; draft-only; path filters; AE11 gate (KTD9) |
-| Malicious/untrusted OAS/MCP inputs | Treat as data not code; no eval of examples; egress allowlist (KTD13) |
-| Dual Zod spine divergence | Shared schema module per mapped IR id (KTD11) |
-| Stale locked OpenAPI false greens | Record digest/URI (KTD15); refresh policy per service |
-| Spring export ≠ runtime prod | Document openapi profile; record source used in PR |
-| GITHUB_TOKEN may not trigger downstream PR CI | Document App/PAT when needed; never auto-merge |
-| MCP↔HTTP name divergence | Override table + uncovered list; do not invent mappings from prose |
-
-### Sources & Research
-
-- Product contract: this file (ce-brainstorm requirements-only origin).
-- Prior art: `@hey-api/openapi-ts` Zod plugin; `@modelcontextprotocol` TypeScript client testing guide; springdoc-openapi export; peter-evans/create-pull-request propose-only pattern; oasdiff / MCP manifest diff tools as optional companions.
-- Repo research: greenfield (README + this plan only); no `docs/solutions/` learnings; no institutional conventions beyond plan PR history.
+| Multi-repo credentials / wrong remote | Manifest `workspace.repo` required; unit-test Recording client asserts repo + path globs; AE11/AE13 |
+| Scaffold corrupts existing UI Playwright | Only create empty `ui` stubs; never write UI specs; validation is additive |
+| Import path breakage at new depth | Vendored support kit + golden emit tests for new relative imports |
+| Dual layout during migration | Explicit fixture adapter; fail CI if non-fixture services still land under factory `generated/` |
+| Workspace clone cost | Reuse `--workspace-dir` for local/CI; shallow clone when remote |
 
 ---
 
 ## Implementation Units
 
-### U1. Greenfield scaffold and CLI skeleton
+### U1. Manifest workspace target fields
 
-- **Goal:** Establish the TypeScript workspace, package scripts, Playwright/Vitest tooling, and a non-interactive `factory` CLI stub that can later host propose.
-- **Requirements:** R1, R8, R10; KTD1, KTD10
+- **Goal:** Service manifests declare where suites land (`workspace.repo` + stable `serviceId`).
+- **Requirements:** R13, R14, F4
 - **Dependencies:** None
-- **Files:**
-  - create: `package.json`, `tsconfig.json`, `vitest.config.ts`, `playwright.config.ts`, `.gitignore`
-  - create: `src/cli/index.ts`, `src/cli/commands/propose.ts` (stub)
-  - create: `tests/unit/cli/help.test.ts`
-  - modify: `README.md` (dev setup + CLI overview only)
-- **Approach:**
-  1. Pin Node 22, Zod 4, Playwright, Vitest, TypeScript ESM.
-  2. Expose `factory --help` and `factory propose --help` with machine-readable exit codes.
-  3. Keep LLM optional and off by default (R8).
-- **Execution note:** Prefer install/runtime smoke for toolchain; unit-test CLI help/exit codes.
+- **Files:** `src/inventory/manifest.ts`, `contracts/demo/service.manifest.yaml`, `contracts/*/service.manifest.yaml`, `tests/unit/inventory/manifest.test.ts`
+- **Approach:** Extend Zod manifest schema with `workspace` object; resolve and validate; fixture services may omit remote and set `workspace.mode: fixture`.
 - **Test scenarios:**
-  - Happy path: `factory --help` exits 0 and lists `propose`.
-  - Happy path: package scripts `test:unit` and `test:e2e` are defined (e2e may skip until U5).
-  - Error path: unknown command exits non-zero with stable error code.
-- **Verification:** Fresh clone install succeeds; CLI help works without network to target services.
+  - Happy: loads manifest with `workspace.repo` and exposes it to propose.
+  - Happy: fixture mode allowed without remote.
+  - Error: non-fixture missing `workspace.repo` → setup failure before emit.
+- **Verify:** `npm run test:unit -- manifest`
 
-### U2. Service manifest, dual ingest, inventory IR, mapping, and drift
+### U2. Workspace emit layout (tests + schemas)
 
-- **Goal:** Ingest MCP defs + OpenAPI, merge into coverage IR with mapping overrides, exclusions, and drift/uncovered reports.
-- **Requirements:** R1–R3, R11; KD2, KD7; KTD2–KTD5; F4, F7; AE2, AE5
+- **Goal:** Emit dual-lane specs and schemas into `playwright/api/<serviceId>/…` naming from KTD6.
+- **Requirements:** R4, R5, R14, AE1, AE13
 - **Dependencies:** U1
-- **Files:**
-  - create: `src/ingest/mcp.ts`, `src/ingest/openapi.ts`
-  - create: `src/inventory/ir.ts`, `src/inventory/merge.ts`, `src/inventory/map.ts`, `src/inventory/drift.ts`
-  - create: `contracts/demo/` sample MCP + OpenAPI fixtures
-  - create: `support/mappings/demo.yaml`, `support/exclusions/demo.yaml`
-  - create: `tests/unit/inventory/merge.test.ts`, `tests/unit/inventory/map.test.ts`, `tests/unit/inventory/drift.test.ts`
-  - create: service manifest schema under `src/inventory/manifest.ts` + `contracts/demo/service.manifest.yaml`
-- **Approach:**
-  1. Manifest names MCP source, OpenAPI source, auth profile id, mapping/exclusion/allowlist paths.
-  2. MCP tools are coverage authority; OpenAPI enriches schemas.
-  3. Heuristic map + overrides; unmapped tools remain in IR with `httpMapped: false`.
-  4. Drift model records missing Spring, param mismatches, and description-level warnings.
-  5. Emit path must not drop MCP tools when OpenAPI enrichment fails (KD7).
-  6. IR carries `coverage-ir/v1` version, mutation class field, and OpenAPI digest/URI (KTD15).
-  7. Manifest host/baseUrl validated against egress allowlist before any later network use (KTD13).
-- **Execution note:** Implement IR merge and mapping test-first with fixture contracts.
+- **Files:** `src/emit/compile.ts`, `src/emit/http.ts`, `src/emit/mcp.ts`, `src/emit/zod.ts`, `tests/golden/*`, `tests/unit/emit/*`
+- **Approach:** Parameterize emit root (workspace checkout vs fixture root). Rewrite import paths to vendored support + local schemas. Update goldens for new filenames.
 - **Test scenarios:**
-  - Covers AE1 inputs: tool with matching OpenAPI operation lands mapped in IR.
-  - Covers AE2 / AE5: tool without OpenAPI enrichment or mapping remains in IR; drift/uncovered entries present.
-  - Covers AE12: disallowed baseUrl fails setup before ingest network fetch when mode is `fetch`.
-  - Edge: empty MCP tool list yields empty coverage with explicit report.
-  - Error: missing OpenAPI file records Spring-missing drift without throwing away MCP tools.
-  - Error: unknown IR major version is refused by emit consumers (covered in U3; schema field set here).
-  - Happy path: override table forces a divergent name pair to map.
-- **Verification:** Unit tests prove merge/map/drift against `contracts/demo` without live network.
+  - Happy: compile demo into fixture workspace tree produces `.http.spec.ts` / `.mcp.spec.ts` + schemas.
+  - Happy: mapped capability emits both lanes sharing schema module.
+  - Error: secret-like material still fails emit (existing guard).
+- **Verify:** golden emit tests green for new layout
 
-### U3. Zod schema emit from inventory
+### U3. Vendored support kit
 
-- **Goal:** Generate Zod schemas (rich from OpenAPI; thin/best-effort from MCP-only tools) consumed by both lanes.
-- **Requirements:** R1, R3, R5; KTD4, KTD11; KD7
+- **Goal:** Propose includes overwrite-owned support helpers so workspace suites run without depending on this factory repo tree.
+- **Requirements:** R14, AE9, KTD5
 - **Dependencies:** U2
-- **Files:**
-  - create: `src/emit/zod.ts`
-  - create: `generated/demo/schemas/` (emitted)
-  - create: `tests/unit/emit/zod.test.ts`
-  - create: `tests/golden/demo-schemas.golden/` (or equivalent snapshot tree)
-- **Approach:**
-  1. Prefer `@hey-api/openapi-ts` Zod plugin for OpenAPI-backed operations.
-  2. Mapped capabilities emit one shared schema module imported by both lanes (KTD11).
-  3. MCP-only tools get JSON Schema → Zod best-effort or thin schemas with drift annotation.
-  4. Deterministic file names and export order from stable IR ids; refuse unknown IR major versions.
-  5. Never hand-edit generated schema files.
+- **Files:** `src/emit/supportKit.ts` (new), `support/fixtures/*` (source templates), tests under `tests/unit/emit/`
+- **Approach:** Copy/adapt auth, expectZod, mcpClient into `playwright/api/support/` with ownership banners; preserve hand-owned paths outside kit.
 - **Test scenarios:**
-  - Happy path: OpenAPI response object yields Zod object schema file shared by HTTP and MCP imports.
-  - Covers KD7: MCP-only tool still emits a usable validator artifact.
-  - Edge: `oneOf`/`anyOf` produce a defined fallback without crashing emit.
-  - Golden: same inputs twice produce byte-identical schema tree.
-  - Error: IR with unsupported major version fails emit with setup-class error.
-- **Verification:** Goldens pass; generated schemas import cleanly from TypeScript.
+  - Happy: kit files appear in emit result set.
+  - Happy: regeneration overwrites kit files but not adjacent hand-owned fixture files.
+  - Error: kit never embeds resolved secret values.
+- **Verify:** unit tests for kit emit + secret scan
 
-### U4. Dual-lane Playwright emit, auth fixtures, and mutation allowlist
+### U4. Scaffold + validation
 
-- **Goal:** Emit HTTP Playwright API tests and live MCP tool tests with shared Zod validation, auth profile fixtures, and safe mutation policy.
-- **Requirements:** R4–R6, R9; KD4, KD5; KTD6–KTD8; F3, F5, F6; AE1, AE4, AE6, AE7, AE9
-- **Dependencies:** U3
-- **Files:**
-  - create: `src/emit/http.ts`, `src/emit/mcp.ts`, `src/emit/templates/`
-  - create: `src/auth/loadProfile.ts`
-  - create: `support/profiles/demo.yaml`, `support/fixtures/auth.ts`, `support/fixtures/expectZod.ts`
-  - create: `support/exclusions/` mutation allowlist path referenced by manifest
-  - create: `generated/demo/http/`, `generated/demo/mcp/`
-  - create: `tests/unit/emit/http.test.ts`, `tests/unit/emit/mcp.test.ts`, `tests/unit/auth/loadProfile.test.ts`
-  - create: `tests/golden/demo-suites.golden/`
-  - modify: `playwright.config.ts` (per-service projects for http/mcp)
-- **Approach:**
-  1. HTTP lane: Playwright `APIRequestContext` + status assert + Zod `safeParse`.
-  2. MCP lane: official TS client transport appropriate for fixture (in-memory or HTTP); check `isError` before parsing `structuredContent`.
-  3. Auth profiles supply headers/tokens via fixtures; secrets never written into generated tests; reject value-like profile material (AE10).
-  4. Mutating/unknown tools without allowlist → intentionally uncovered, not invoked (fail closed).
-  5. Ownership banners on generated specs; overwrite only generated paths.
-  6. Assertion helpers attach failure class (`contract`/`auth`/`transport`/`setup`); scrub auth headers from traces.
-  7. Secret-pattern gate fails emit if generated tree would contain bearer/token literals.
-- **Execution note:** Emitter goldens first; live dual-lane smoke against fixture service in U5/U6. Land mutation fail-closed + secret gate before external staging.
+- **Goal:** Ensure Playwright npm workspace shape exists and is valid before propose.
+- **Requirements:** R15, F8, AE14, AE15
+- **Dependencies:** U1
+- **Files:** `src/scaffold/ensurePlaywrightWorkspace.ts` (new), `src/scaffold/validate.ts` (new), `tests/unit/scaffold/*`, `fixtures/workspace-app/`
+- **Approach:** If missing, create root/api package.json workspaces and empty `ui` stubs; validate workspaces field, required dirs, and service landing path; return setup-class error on failure.
 - **Test scenarios:**
-  - Covers AE1: mapped capability emits both HTTP and MCP specs importing shared schema.
-  - Covers AE7: mutating or unknown tool absent from allowlist produces uncovered entry and no live call in emitted MCP suite.
-  - Covers AE9: regen overwrites generated path; `support/fixtures` unchanged.
-  - Covers AE10: profile with embedded secret value fails load; golden generated tree has no bearer/token literals.
-  - Error: missing required secret name in profile fails auth loader with auth-class error code.
-  - Edge: excluded tool appears as intentionally uncovered, not as a gap.
-  - Happy path: Playwright projects `demo-http` and `demo-mcp` are configured.
-- **Verification:** Emitter unit + golden tests green; sample generated specs typecheck.
+  - Happy: empty repo fixture gains valid scaffold without UI test files.
+  - Happy: existing valid workspace → no-op / no destructive UI changes.
+  - Error: broken workspace package.json → propose aborted, no PR.
+- **Verify:** scaffold unit tests
 
-### U5. Propose-only CLI/CI path and PR reporting
+### U5. External workspace draft propose
 
-- **Goal:** Wire `factory propose` to write suites and open/update a draft per-service PR with coverage, drift, and uncovered sections — never merge.
-- **Requirements:** R7, R10, R11; KD3; KTD9, KTD10, KTD12; F1, F2, AE3, AE8
+- **Goal:** Open/update draft PRs on the mapped app workspace repo with path-filtered playwright changes only.
+- **Requirements:** R7, R10, R13, AE3, AE11, AE13, F1, F2
+- **Dependencies:** U2, U3, U4
+- **Files:** `src/cli/commands/propose.ts`, `src/propose/gitBranch.ts`, `src/propose/workspaceCheckout.ts` (new), `src/propose/prBody.ts`, `.github/workflows/factory-propose.yml`, `tests/unit/propose/*`
+- **Approach:** After compile, checkout workspace (clone or `--workspace-dir`), scaffold+validate, emit+kit, then draft PR via repo-scoped GitHub client; path globs `playwright/api/<serviceId>/**` plus scaffold/support paths touched; default remains dry-run without `--open-pr`.
+- **Test scenarios:**
+  - Happy: Recording client receives draft PR for `owner/app` with playwright path globs only.
+  - Happy: no-delta → no PR.
+  - Error: validation failure → no GitHub call.
+  - Error: client never invoked with merge/approve.
+- **Verify:** propose unit tests + dry-run CLI against fixture workspace
+
+### U6. Factory fixture-only policy + CI/docs
+
+- **Goal:** This repo no longer presents `generated/jsonplaceholder` (or similar) as production suite home; CI/docs match R12.
+- **Requirements:** R12, KTD3, KTD7
+- **Dependencies:** U2
+- **Files:** `README.md`, `playwright.config.ts`, `.github/workflows/suites.yml`, `generated/jsonplaceholder/**` (remove or relocate under fixtures), docs pointers
+- **Approach:** Limit factory Playwright discovery/CI to demo/fixture; document workspace landing; update README layout section.
+- **Test scenarios:**
+  - Happy: factory CI still runs demo self-test.
+  - Happy: README describes workspace landing, not production `generated/` ownership.
+- **Verify:** `npm run test:unit`, fixture e2e smoke, README review
+
+### U7. Workspace Playwright config template
+
+- **Goal:** Scaffold installs a Playwright config that auto-discovers `api/*/tests` so workspace CI can run merged suites.
+- **Requirements:** R14, F3, AE4
 - **Dependencies:** U4
-- **Files:**
-  - modify: `src/cli/commands/propose.ts`
-  - create: `src/propose/prBody.ts`, `src/propose/gitBranch.ts`, `src/report/failureClass.ts`
-  - create: `.github/workflows/factory-propose.yml`
-  - create: `tests/unit/propose/prBody.test.ts`, `tests/unit/propose/noDelta.test.ts`
-- **Approach:**
-  1. `factory propose --service <id>` runs ingest→emit, then opens/updates `factory/<service-id>` draft PR.
-  2. PR body includes coverage delta, drift, uncovered, intentionally uncovered, generator version, OpenAPI/MCP source refs/digests.
-  3. No-delta → skip PR when IR hash + generator versions unchanged.
-  4. Workflow wraps the same CLI; `draft: true`; dedicated App/PAT; path filters to `generated/<service>/**`; no auto-merge; bot must not modify `.github/workflows` or profile values.
-  5. Concurrent runs reuse the same branch/PR per service (force-with-lease on factory branch only).
-  6. Optional LLM hints section is off by default and cannot write IR/tests (KTD14).
+- **Files:** `src/scaffold/templates/playwright.config.ts`, fixture workspace copy, tests asserting discovery
+- **Approach:** Template mirrors current auto-discover idea but rooted at `playwright/api/*/tests` with http/mcp filename projects or grep; only written when missing.
 - **Test scenarios:**
-  - Covers AE3 / AE11: propose path never calls merge/approve APIs; workflow is draft-only.
-  - Covers AE8: identical IR hash + generator versions → operation `none` / skip.
-  - Happy path: PR body markdown contains Drift and Uncovered sections with tool ids.
-  - Edge: batch `--service a --service b` yields two bounded PRs.
-  - Error: propose without manifest fails with setup-class error before git writes.
-  - Happy path: LLM disabled (`OPENAI_API_KEY` unset) still completes propose.
-- **Verification:** Unit tests for PR body and no-delta; workflow file present and draft-only.
-
-### U6. Fixture service, end-to-end proof, and post-merge CI gate
-
-- **Goal:** Prove dual-lane coverage against a local fixture and add CI that runs factory tests plus merged suite projects with failure taxonomy.
-- **Requirements:** R4–R6, R9; F3; AE1, AE4, AE6; KTD12
-- **Dependencies:** U5
-- **Files:**
-  - create: `fixtures/demo-service/` (minimal HTTP API + MCP surface sharing one capability)
-  - create: `.github/workflows/suites.yml`, `.github/workflows/factory-ci.yml`
-  - create: `tests/e2e/demo-dual-lane.spec.ts` (or scripted propose→playwright against fixture)
-  - modify: `README.md` (how to run fixture + CI expectations)
-  - create: `tests/unit/report/failureClass.test.ts`
-- **Approach:**
-  1. Fixture exposes at least one mapped tool/endpoint pair and one MCP-only tool for KD7 proof.
-  2. CI job A: factory unit + golden tests.
-  3. CI job B: Playwright `demo-http` / `demo-mcp` against fixture with demo auth profile.
-  4. Annotate failures with contract/auth/transport/setup classes.
-- **Execution note:** Smoke-first for fixture bring-up; then assert AE1/AE4 on the fixture surface.
-- **Test scenarios:**
-  - Covers AE1 / AE4: fixture mapped capability passes both lanes after propose emit.
-  - Covers AE2 path: MCP-only fixture tool emits MCP test and uncovered HTTP mapping note.
-  - Covers AE6: unsetting demo secret yields auth-class failure annotation.
-  - Integration: `factory propose --service demo` against fixture contracts produces reviewable diff without merge.
-  - Error: stopping fixture mid-suite yields transport-class failure, not contract.
-- **Verification:** Local and CI paths run factory tests and dual-lane fixture suites green with secrets provided.
+  - Happy: scaffolded config discovers both lane file patterns for a service.
+  - Happy: does not overwrite an existing custom config (document merge guidance in PR body if conflict).
+- **Verify:** scaffold template tests
 
 ---
 
 ## Verification Contract
 
-| Gate | Command / check | Applies when | Pass signal |
-|------|-----------------|--------------|-------------|
-| Unit + golden | `npm test` (or `pnpm test`) running Vitest unit + golden suites | Every PR touching factory code | All unit/golden tests pass |
-| Typecheck | `npm run typecheck` | Every PR | `tsc --noEmit` clean |
-| Fixture dual-lane | Playwright projects `demo-http` and `demo-mcp` against `fixtures/demo-service` | After U4–U6; required for DoD | AE1/AE4 scenarios green |
-| Propose dry path | `factory propose --service demo` in CI or local with draft PR disabled / mocked git | U5+ | Emits suites; PR body unit-covered; no merge |
-| Auth failure class | Unset required demo secret and run suite job | U6 | Exit/annotation is `auth`, not `contract` |
-| Secret non-leak | Golden/scan on `generated/` for token/bearer patterns | U4+ | Clean (AE10) |
-| Propose permissions | Workflow review + unit mocks of GH client | U5+ | Draft-only; no merge (AE11) |
-| Egress allowlist | Unit: bad baseUrl → setup failure | U2–U6 | Fail before network (AE12) |
-| Trust boundary | Workflow/code review: no auto-merge; draft PR only | U5+ | No enable-automerge; propose-only permissions |
-
-Greenfield note: exact package manager lockfile is chosen in U1; commands above use npm as placeholder and must match the lockfile committed in U1.
+- **Factory unit/golden:** `npm run test:unit` (Vitest) — must cover U1–U5 scenarios including layout goldens and propose Recording client.
+- **Factory fixture smoke:** `npm run test:e2e` limited to demo/fixture projects after U6.
+- **Propose dry-run:** `npm run factory -- propose --service demo --dry-run` against fixture workspace dir succeeds with scaffold+emit, no GitHub calls.
+- **Propose open-pr (integration, optional in CI):** mocked or recorded GitHub client asserts draft + path filters; live remote optional behind manual workflow_dispatch.
+- **Quality gates:** typecheck (`npm run typecheck`); secret scan on emitted trees; no auto-merge settings in workflows.
+- **Traceability:** AE13–AE15 and F8 covered by U4/U5 tests; R12 covered by U6.
 
 ---
 
 ## Definition of Done
 
-**Global**
-
-- Global: Product Contract R1–R11 satisfied for the demo/fixture surface with propose-only delivery.
-  - Demo DoD interprets R6 as: mapped demo capability has dual-lane merged coverage; the MCP-only KD7 proof tool is propose-complete (MCP lane + uncovered list) and is either excluded from rollout completeness or mapped before claiming full R6 on demo.
-- Dual-lane emit works offline from contracts; live lanes pass against the fixture in CI.
-- Drift/uncovered/intentional-uncovered reporting appears on propose PRs.
-- No auto-merge; LLM remains optional/off by default.
-- Abandoned spike code from implementation attempts is removed from the final diff.
-- README documents CLI, manifests, auth profiles, and CI expectations.
-
-**Per unit**
-
-- U1: CLI skeleton and toolchain installable by a new contributor.
-- U2: IR merge/map/drift unit-proven on demo contracts.
-- U3: Zod emit goldens stable and importable.
-- U4: Dual-lane generated suites + auth/mutation policy unit/golden proven.
-- U5: Propose path opens/updates draft PR metadata without merge; no-delta skip works.
-- U6: Fixture + CI gates green with failure taxonomy.
-
----
-
-## Appendix
-
-### Phased delivery
-
-1. **Foundation** — U1–U2 (scaffold + inventory)
-2. **Emit** — U3–U4 (Zod + dual-lane suites), including mutation fail-closed + secret non-leak gates before external staging
-3. **Trust + prove** — U5–U6 (propose PR bot locks + fixture CI); onboard external staging only after AE10–AE12 green
-
-### Operational notes
-
-- Default target env for live suites is non-prod staging (or local fixture in this repo).
-- Secrets stay in CI/secret store; profiles commit env-var names only.
-- First external service onboarding uses the same manifest shape as `demo`.
-- Human review checklist for factory PRs: drift classifications, allowlist/exclusion deltas, host/env changes, generated-path clobber notes.
+- All Implementation Units U1–U7 complete with listed tests green.
+- Product Contract KD8 / R12–R15 behaviors demonstrable via fixture workspace + Recording/draft propose path.
+- No production service suites required to live under this factory repo's `generated/` for CI green.
+- README and factory-propose workflow match workspace-targeted propose.
+- No open **Resolve Before Planning** blockers; deferred Q1/Q2/Q4 documented as non-blocking.
+- Ready for `ce-work` (or equivalent) execution by unit order: U1 → U2/U4 → U3 → U7 → U5 → U6.

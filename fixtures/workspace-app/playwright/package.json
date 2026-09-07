@@ -1,0 +1,11 @@
+{
+  "name": "app-playwright",
+  "private": true,
+  "workspaces": [
+    "ui",
+    "api"
+  ],
+  "devDependencies": {
+    "@playwright/test": "^1.51.0"
+  }
+}

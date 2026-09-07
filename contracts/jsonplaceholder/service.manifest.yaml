@@ -11,3 +11,5 @@ mcp:
 mappingPath: support/mappings/jsonplaceholder.yaml
 exclusionPath: support/exclusions/jsonplaceholder.yaml
 allowlistPath: support/allowlists/jsonplaceholder.yaml
+workspace:
+  mode: fixture

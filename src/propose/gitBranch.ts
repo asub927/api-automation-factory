@@ -18,29 +18,41 @@ export function hashIr(ir: CoverageIr, generatorVersion: string): string {
 
 export type ProposeOperation = "created" | "updated" | "none";
 
-export interface GitHubProposeClient {
-  openOrUpdateDraftPr(input: {
-    branch: string;
-    title: string;
-    body: string;
-    pathGlobs: string[];
-  }): Promise<{ operation: ProposeOperation; number?: number }>;
+export interface OpenDraftPrInput {
+  /** Target GitHub repo as owner/name. */
+  repo: string;
+  branch: string;
+  title: string;
+  body: string;
+  pathGlobs: string[];
 }
 
-/** Mockable client used in unit tests (AE11). */
+export interface GitHubProposeClient {
+  openOrUpdateDraftPr(
+    input: OpenDraftPrInput,
+  ): Promise<{ operation: ProposeOperation; number?: number }>;
+}
+
+/** Recording client used in unit tests (AE11) — draft-only, never merge/approve. */
 export class RecordingGitHubClient implements GitHubProposeClient {
   calls: Array<Record<string, unknown>> = [];
-  async openOrUpdateDraftPr(input: {
-    branch: string;
-    title: string;
-    body: string;
-    pathGlobs: string[];
-  }): Promise<{ operation: ProposeOperation; number?: number }> {
+
+  async openOrUpdateDraftPr(
+    input: OpenDraftPrInput,
+  ): Promise<{ operation: ProposeOperation; number?: number }> {
     this.calls.push({ method: "openOrUpdateDraftPr", ...input, draft: true });
-    if (input.branch.startsWith("factory/")) {
-      return { operation: "created", number: 1 };
+    if (!input.repo.includes("/")) {
+      throw new Error("repo must be owner/name");
     }
-    throw new Error("refusing non-factory branch");
+    if (!input.branch.startsWith("factory/")) {
+      throw new Error("refusing non-factory branch");
+    }
+    for (const g of input.pathGlobs) {
+      if (!g.startsWith("playwright/")) {
+        throw new Error(`path glob outside playwright/: ${g}`);
+      }
+    }
+    return { operation: "created", number: 1 };
   }
 
   assertNoMerge(): void {

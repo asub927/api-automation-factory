@@ -5,17 +5,32 @@ import { ingestOpenApi } from "../ingest/openapi.js";
 import { mergeInventory } from "../inventory/merge.js";
 import { loadManifest } from "../inventory/manifest.js";
 import { emitZodSchemas } from "./zod.js";
-import { emitHttpSuites } from "./http.js";
-import { emitMcpSuites } from "./mcp.js";
+import { emitHttpSuites, emitMcpSuites, resetEmitRoot } from "./http.js";
+
+export interface CompileOptions {
+  /** Absolute emit root for this service (defaults to generated/<serviceId>). */
+  emitRoot?: string;
+  /**
+   * Import base for support helpers from tests/ (no trailing slash).
+   * Fixture default: ../../../support/fixtures
+   * Workspace kit: ../../support
+   */
+  supportImportBase?: string;
+}
 
 export interface CompileResult {
   ir: ReturnType<typeof mergeInventory>;
   schemaFiles: string[];
   httpFiles: string[];
   mcpFiles: string[];
+  emitRoot: string;
 }
 
-export function compileService(repoRoot: string, serviceId: string): CompileResult {
+export function compileService(
+  repoRoot: string,
+  serviceId: string,
+  opts: CompileOptions = {},
+): CompileResult {
   const manifestPath = join(repoRoot, "contracts", serviceId, "service.manifest.yaml");
   const { manifest, abs } = loadManifest(manifestPath, repoRoot);
   const mcp = ingestMcp(abs.mcpPath);
@@ -47,11 +62,14 @@ export function compileService(repoRoot: string, serviceId: string): CompileResu
     allowlistPath: abs.allowlistPath || undefined,
   });
 
-  const base = join(repoRoot, "generated", serviceId);
-  const schemaFiles = emitZodSchemas(ir, join(base, "schemas"));
-  const httpFiles = emitHttpSuites(ir, join(base, "http"));
-  const mcpFiles = emitMcpSuites(ir, join(base, "mcp"));
-  return { ir, schemaFiles, httpFiles, mcpFiles };
+  const emitRoot = opts.emitRoot ?? join(repoRoot, "generated", serviceId);
+  resetEmitRoot(emitRoot);
+  const schemaFiles = emitZodSchemas(ir, join(emitRoot, "schemas"));
+  const testsDir = join(emitRoot, "tests");
+  const suiteOpts = { supportImportBase: opts.supportImportBase };
+  const httpFiles = emitHttpSuites(ir, testsDir, suiteOpts);
+  const mcpFiles = emitMcpSuites(ir, testsDir, suiteOpts);
+  return { ir, schemaFiles, httpFiles, mcpFiles, emitRoot };
 }
 
 export function repoRootFromUrl(metaUrl: string): string {
