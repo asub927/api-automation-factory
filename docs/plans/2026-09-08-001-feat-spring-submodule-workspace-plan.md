@@ -4,9 +4,10 @@ type: feat
 date: 2026-09-08
 topic: spring-submodule-workspace
 artifact_contract: ce-unified-plan/v1
-artifact_readiness: requirements-only
+artifact_readiness: implementation-ready
 product_contract_source: ce-brainstorm
 execution: code
+deepened: 2026-09-08
 ---
 
 # Spring Submodule Workspace Factory Targets - Plan
@@ -15,8 +16,10 @@ execution: code
 
 - **Objective:** Own a git-submodule Spring workspace under `asub927/spring-service` with a classic 3-layer archetype and three factory-stress gauge services, and hand off digested OpenAPI (+ derived MCP) contracts into `api-automation-factory` so factory-emitted suites execute and a fourth API can onboard without bespoke factory code.
 - **Product authority:** This plan owns the Spring workspace shape, gauge-service product intent, and factory contract handoff for those targets. It does not own in-process Spring MCP servers or the factory's core compiler product (see parent factory plan).
-- **Open blockers:** None for planning. GitHub remote creation for the three sibling gauge repos is assumed available to the implementer.
+- **Authority hierarchy:** Product Contract (R/A/F/AE/KD) → Planning Contract (KTD) → Implementation Units → Verification Contract → Definition of Done.
+- **Open blockers:** Cloud agent cannot push to `asub927/spring-service` (403) and cannot create sibling remotes (403). Implementation of U1–U3 requires write access to `spring-service` plus three writable gauge remotes (pre-created empty repos are fine). Factory-side U4–U6 can proceed in `api-automation-factory` once OpenAPI lockfiles exist.
 - **Surrounding work:** Dual-lane Spring `/mcp` truth source and intentional drift-sibling CI teaching are deferred follow-ons, not active scope.
+- **Product Contract preservation:** Product Contract meaning and R1–R8 / KD1–KD5 IDs unchanged. Planning-time HOW recorded under Planning Contract KTDs.
 
 ## Product Contract
 
@@ -136,23 +139,20 @@ flowchart LR
 
 ### Dependencies / Assumptions
 
-- Implementer can create the three sibling GitHub remotes under the same owner as `spring-service`.
+- Write access to `asub927/spring-service` and to three sibling gauge remotes (create empty remotes first if App cannot create repos).
 - Factory continues to require OpenAPI lockfiles (fetch mode disabled in v1).
-- Local/CI may boot gauges as JARs or containers; exact mechanism is planning's choice so long as R7 holds.
+- Local/CI boots gauges via Compose/script (KTD3) so R7 holds.
 - Egress allowlisting and auth profiles follow existing factory conventions.
 
 ### Outstanding Questions
 
-**Deferred to Planning**
-
-- Exact remote names and submodule paths for the three gauges.
-- Port matrix values and boot orchestration (script vs Compose).
-- Whether derived MCP for the OpenAPI-gap gauge intentionally exceeds HTTP export, and how mappings/exclusions document that.
-- How much of `mcpClient` generalization ships in this work vs a thin factory follow-up IU—must still satisfy R8.
-
 **Resolve Before Planning**
 
 - None.
+
+**Deferred to Planning**
+
+- None remaining — resolved into KTDs below.
 
 ### Sources / Research
 
@@ -161,3 +161,103 @@ flowchart LR
 - Experiment ladder Tier E: `docs/research/experiment-apis-and-inputs.md`.
 - Seed: https://github.com/asub927/spring-service (empty scaffold).
 - Grounding dossier: `/tmp/compound-engineering-1000/ce-brainstorm/spring-spine-1/grounding.md` (in-thread substitution after scout usage-limit failure).
+
+---
+
+## Planning Contract
+
+### Key Technical Decisions
+
+- **KTD1. Remote and path names** — Use remotes `asub927/spring-gauge-dto`, `asub927/spring-gauge-auth`, `asub927/spring-gauge-drift`, pinned at `services/gauge-dto`, `services/gauge-auth`, `services/gauge-drift` under `spring-service`. Parent keeps archetype at `archetype/`. `(session-settled deferred→decided: planning default)` Governs R2, R3.
+- **KTD2. Port matrix** — `gauge-dto`→4101, `gauge-auth`→4102, `gauge-drift`→4103; env overrides `GAUGE_DTO_BASE_URL` / `GAUGE_AUTH_BASE_URL` / `GAUGE_DRIFT_BASE_URL` matching Playwright `<SERVICE>_BASE_URL` convention. Governs R4, R7.
+- **KTD3. Boot via Compose** — `docker-compose.workspace.yml` (or equivalent script) starts the three Boot JARs/containers with health checks on `/actuator/health` or `/health`; no Eureka. Governs R4, R7.
+- **KTD4. Drift gauge MCP floor** — `gauge-drift` ships MCP defs derived from a fuller OpenAPI specimen while the committed factory OpenAPI lockfile omits at least one mapped operation, forcing `spring-missing` WARN with MCP coverage floor. Document in mappings/exclusions. Governs R3, R6, AE5.
+- **KTD5. Generic MCP bridge dispatch in this work** — Extend `support/fixtures/mcpClient.ts` so any service with `xFactoryHttp` metadata in `contracts/<id>/mcp-tools.json` uses the jsonplaceholder-style HTTP bridge; keep `demo` special-case for live `/mcp`. Satisfies R8 in-repo. Governs R8.
+- **KTD6. Spring stack** — Spring Boot 3.x + Java 21 + Maven + springdoc-openapi + H2/in-memory repositories; no Spring Data REST. Governs R2, R4.
+- **KTD7. Contract sync script** — Factory repo script `scripts/sync-spring-gauge-contracts.mjs` (or shell) copies exported `openapi.yaml` from each running gauge (or checked-in export artifact) into `contracts/<id>/`, runs `derive-mcp-from-openapi.mjs`, and leaves manifests/support stubs. Governs R6.
+
+### Assumptions
+
+- User (or expanded GitHub App installation) grants write to `spring-service` and creates/writable three gauge remotes before U1–U3 execute.
+- JDK 21 available in implementer environment (verified present in current cloud VM).
+- Maven will be installed if missing during U1.
+
+### Risks
+
+- Submodule push choreography across four remotes; mitigate with documented `scripts/publish-gauges.sh` in the parent.
+- Cloud agent token scope may remain insufficient; factory-only units can still land first with fixture OpenAPI stubs, but R7 requires live Boot apps.
+
+---
+
+## Implementation Units
+
+### U1. Archetype skeleton in `spring-service`
+
+**Goal:** Parent repo has a copyable 3-layer Maven archetype with springdoc and operationId conventions.  
+**Requires:** Write access to `asub927/spring-service`.  
+**Covers:** R1, R2 · **KTDs:** KTD6  
+**Files:** (external) `archetype/**` under `spring-service`  
+**Verify:** Archetype builds; `/v3/api-docs` serves after `spring-boot:run` sample.  
+**Tests:** Manual/smoke — archetype module compiles; optional Spring Boot test for one sample controller.
+
+### U2. Three gauge remotes as submodules
+
+**Goal:** Create/populate `spring-gauge-dto`, `spring-gauge-auth`, `spring-gauge-drift` from archetype; pin in parent `.gitmodules`.  
+**Depends on:** U1  
+**Covers:** R3, R4 · **KTDs:** KTD1, KTD2, KTD4, KTD6  
+**Files:** (external) three remotes + `spring-service/.gitmodules`, `services/*`  
+**Verify:** `git submodule update --init` yields three Boot apps on 4101–4103 with distinct stress behaviors.  
+**Tests:** Per-service `@WebMvcTest` or MockMvc covering happy path + one validation/auth/mutation case; drift service documents missing OpenAPI op.
+
+### U3. Workspace boot + OpenAPI export
+
+**Goal:** Compose/script boots gauges; each CI/local path exports springdoc to a stable artifact path.  
+**Depends on:** U2  
+**Covers:** R4, R6 · **KTDs:** KTD2, KTD3  
+**Files:** (external) `docker-compose.workspace.yml`, export Maven task, README  
+**Verify:** Health gates pass; exported YAML exists per service.
+
+### U4. Factory contract handoff + sync script
+
+**Goal:** Land `contracts/gauge-dto|gauge-auth|gauge-drift/` lockfiles, manifests, support YAML; sync script from exports.  
+**Depends on:** U3 (or committed export artifacts)  
+**Covers:** R6 · **KTDs:** KTD4, KTD7  
+**Files:** `contracts/gauge-*/**`, `support/{mappings,exclusions,allowlists,profiles}/*`, `scripts/sync-spring-gauge-contracts.mjs`, `support/egress-allowlist.yaml`  
+**Tests:** `tests/unit/` covering sync script / manifest load for new serviceIds; golden or snapshot for derived MCP naming.
+
+### U5. Generic MCP client dispatch
+
+**Goal:** Remove hardcoded serviceId allowlist for bridge services.  
+**Depends on:** U4 (needs mcp-tools with `xFactoryHttp`)  
+**Covers:** R8 · **KTDs:** KTD5  
+**Files:** `support/fixtures/mcpClient.ts`, `tests/unit/fixtures/mcpClient.test.ts`  
+**Tests:** Unit tests — unknown service with `xFactoryHttp` succeeds; unknown without metadata still fails setup; `demo` unchanged.
+
+### U6. Emit + execute HTTP suites against gauges
+
+**Goal:** `factory propose` (dry-run then real) emits HTTP projects; Playwright HTTP lane green against booted gauges.  
+**Depends on:** U3, U4, U5  
+**Covers:** R5, R7 · **KTDs:** KTD2, KTD3  
+**Files:** `generated/gauge-*/http/**` (emit-owned), workflow or doc for boot-before-test  
+**Tests:** Playwright `--project=gauge-dto-http` (and siblings) against live ports; at least one MCP bridge project for dto/auth.
+
+---
+
+## Verification Contract
+
+- **VC1.** Unit: mcpClient generic bridge + sync script (U4–U5).
+- **VC2.** Spring module tests for each gauge (U2).
+- **VC3.** Integration: boot compose → factory HTTP projects green for all three gauges (U6); drift gauge shows spring-missing in propose report (AE5).
+- **VC4.** Scale smoke: add a fake fourth `contracts/scale-probe/` with bridge metadata and confirm mcpClient needs no code change (AE4).
+
+---
+
+## Definition of Done
+
+- [ ] `spring-service` contains archetype + `.gitmodules` pinning three gauges
+- [ ] Three gauges boot on 4101–4103 with 3-layer packages and springdoc
+- [ ] Factory `contracts/gauge-{dto,auth,drift}/` lockfiles + derived MCP present
+- [ ] `mcpClient` dispatches bridge services without new hardcodes
+- [ ] Factory HTTP suites execute green against live gauges
+- [ ] README documents onboard path for a fourth API (manifest-only)
+- [ ] PR(s) opened for factory changes; Spring remotes updated on their remotes
