@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ideation: Spring submodule workspace for factory targets</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap" />
+<style>
+  :root {
+    --bg: #f7f4ef;
+    --ink: #1c1a17;
+    --muted: #5c564c;
+    --line: #d9d2c5;
+    --card: #fffdf9;
+    --accent: #0b6e4f;
+    --accent-soft: #e3f2eb;
+    --warn: #8a4b08;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 500px at 10% -10%, #e8f3ee 0%, transparent 55%),
+      radial-gradient(900px 400px at 100% 0%, #f0e8d8 0%, transparent 50%),
+      var(--bg);
+    line-height: 1.55;
+  }
+  main { max-width: 920px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+  header.doc-meta {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 1.25rem;
+    margin-bottom: 2rem;
+  }
+  header.doc-meta h1 {
+    font-family: "IBM Plex Serif", Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    margin: 0 0 0.75rem;
+    letter-spacing: -0.02em;
+  }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 1rem;
+    font-size: 0.92rem;
+    color: var(--muted);
+  }
+  .meta-grid dt { font-weight: 600; color: var(--ink); }
+  section { margin: 2.25rem 0; }
+  h2 {
+    font-family: "IBM Plex Serif", Georgia, serif;
+    font-size: 1.35rem;
+    margin: 0 0 0.75rem;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.35rem;
+  }
+  h3 { margin: 1.25rem 0 0.4rem; font-size: 1.05rem; }
+  ul.axes { padding-left: 1.2rem; }
+  ul.axes li { margin: 0.25rem 0; }
+  .jump {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    margin: 0.75rem 0 1.5rem;
+  }
+  .jump a {
+    text-decoration: none;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid #b7d9c8;
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .idea {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem 1.25rem;
+    margin: 1.25rem 0;
+  }
+  .idea h3 { margin-top: 0; font-family: "IBM Plex Serif", Georgia, serif; font-size: 1.2rem; }
+  .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 0.85rem; }
+  .badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background: #efeae1;
+    color: var(--muted);
+  }
+  .badge.axis { background: var(--accent-soft); color: var(--accent); }
+  .badge.conf { background: #e8eef8; color: #244a7a; }
+  .field-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-top: 0.7rem; }
+  .field { margin: 0.2rem 0 0; }
+  .basis code { font-size: 0.85em; }
+  svg.diagram {
+    display: block;
+    width: 100%;
+    max-width: 640px;
+    margin: 0.85rem 0 0.25rem;
+    background: #fbfaf7;
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+  }
+  table.reject {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+  table.reject th, table.reject td {
+    border: 1px solid var(--line);
+    padding: 0.5rem 0.65rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  table.reject th { background: #efeae1; }
+  footer.composition-signal {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<main>
+<header class="doc-meta">
+  <h1>Ideation: Spring submodule workspace for factory targets</h1>
+  <dl class="meta-grid">
+    <dt>Date</dt><dd><time datetime="2026-09-07">2026-09-07</time></dd>
+    <dt>Topic</dt><dd>spring-submodule-workspace</dd>
+    <dt>Focus</dt><dd>Factory experiment targets: classic 3-layer Spring services seeded from <code>asub927/spring-service</code>, organized as a git-submodule workspace the factory can consume</dd>
+    <dt>Mode</dt><dd>repo-grounded</dd>
+  </dl>
+</header>
+
+<section id="grounding-context">
+  <h2>Grounding Context</h2>
+  <h3>Codebase Context</h3>
+  <p><code>api-automation-factory</code> compiles MCP tool surfaces plus Spring/OpenAPI contracts into deterministic Playwright + Zod dual-lane suites, delivered as propose-only PRs. Onboarding is already shaped as <code>contracts/&lt;service&gt;/</code> (manifest + OpenAPI lockfile + MCP tools). Live targets today are a flat Node demo fixture and JSONPlaceholder — not Spring. Experiment research already names Tier E (springdoc / Petclinic + thin MCP adapter) as the closest production shape; the user now wants to <em>own</em> that shape.</p>
+  <p>Seed repo <a href="https://github.com/asub927/spring-service">asub927/spring-service</a> is nearly empty (README / LICENSE / Java <code>.gitignore</code>). The factory has zero <code>.gitmodules</code> and zero Java sources. v1 ingest rejects <code>openApi.mode=fetch</code>; lockfiles must be committed. <code>mcpClient.ts</code> hardcodes only <code>demo</code> and <code>jsonplaceholder</code>.</p>
+  <h3>External Context</h3>
+  <p>Prior art: spring-petclinic / microservices, piomin springdoc multi-service demos, small order/inventory/payment samples, <code>generic_spring_service</code> 3-layer templates. Prefer 2–3 synchronous REST services over full Eureka stacks. Spring AI MCP exists but public samples are tool servers, not REST + OpenAPI dual-lane. Git submodule pain is real; user still requires submodules.</p>
+  <h3>Past Learnings</h3>
+  <p><code>docs/solutions/</code> does not exist — no institutional learnings yet.</p>
+</section>
+
+<section id="topic-axes">
+  <h2>Topic Axes</h2>
+  <ul class="axes">
+    <li>Service architecture shape</li>
+    <li>Workspace and git submodule topology</li>
+    <li>Contract handoff to factory</li>
+    <li>Dual-lane MCP surface</li>
+    <li>Local run and CI bootstrapping</li>
+  </ul>
+</section>
+
+<section id="ranked-ideas">
+  <h2>Ranked Ideas</h2>
+  <nav class="jump" aria-label="Jump to ideas">
+    <a href="#idea-1">1. 3-layer archetype</a>
+    <a href="#idea-2">2. Gauge-block farm</a>
+    <a href="#idea-3">3. Parent contracts</a>
+    <a href="#idea-4">4. Export conveyor</a>
+    <a href="#idea-5">5. Dual-lane Spring</a>
+    <a href="#idea-6">6. Drift sibling pair</a>
+  </nav>
+
+  <article class="idea" id="idea-1">
+    <h3>1. Enforced 3-layer archetype from spring-service</h3>
+    <div class="badges">
+      <span class="badge axis">Service architecture shape</span>
+      <span class="badge conf">Confidence 88%</span>
+      <span class="badge">Complexity Medium</span>
+    </div>
+    <p class="field">Keep <code>asub927/spring-service</code> as a read-only archetype chassis (not a live business app). From it, generate or fork target repos that always ship <code>@RestController</code> → <code>@Service</code> → repository boundaries, stable <code>operationId</code>s (and optional <code>x-mcp-tool-name</code>), springdoc, and an explicit ban on Spring Data REST auto-exposure. Every future factory target clones this spine instead of inventing package layout.</p>
+    <p class="field-label">Basis</p>
+    <p class="field basis"><code>direct:</code> seed repo is empty template only; factory has no Java / no <code>@RestController</code>; demo fixture is a flat Node handler. <code>external:</code> <code>generic_spring_service</code> ExampleController/Service/Repository template; Tier E expects real Spring controllers/DTOs.</p>
+    <p class="field-label">Rationale</p>
+    <p class="field">Without an enforced shape, each submodule re-decides layering and OpenAPI operation naming — the factory then compiles against contracts that do not match how production Spring teams organize code.</p>
+    <p class="field-label">Downsides</p>
+    <p class="field">Generator/maintenance cost; archetype upgrades must not silently break pinned targets.</p>
+    <svg class="diagram" viewBox="0 0 640 180" role="img" aria-label="Archetype chassis forking into target services">
+      <rect x="20" y="60" width="160" height="60" rx="8" fill="#e3f2eb" stroke="#0b6e4f"/>
+      <text x="100" y="95" text-anchor="middle" font-size="13" fill="#1c1a17">spring-service</text>
+      <text x="100" y="112" text-anchor="middle" font-size="11" fill="#5c564c">archetype only</text>
+      <path d="M180 90 H240" stroke="#5c564c" marker-end="url(#a)"/>
+      <rect x="250" y="20" width="150" height="50" rx="8" fill="#fffdf9" stroke="#d9d2c5"/>
+      <text x="325" y="50" text-anchor="middle" font-size="12">C → S → R + opsId</text>
+      <rect x="250" y="85" width="150" height="50" rx="8" fill="#fffdf9" stroke="#d9d2c5"/>
+      <text x="325" y="115" text-anchor="middle" font-size="12">target submodule</text>
+      <rect x="420" y="55" width="190" height="70" rx="8" fill="#efeae1" stroke="#d9d2c5"/>
+      <text x="515" y="85" text-anchor="middle" font-size="12">N isomorphic</text>
+      <text x="515" y="103" text-anchor="middle" font-size="12">factory targets</text>
+      <defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5c564c"/></marker></defs>
+    </svg>
+  </article>
+
+  <article class="idea" id="idea-2">
+    <h3>2. Orthogonal gauge-block calibration farm</h3>
+    <div class="badges">
+      <span class="badge axis">Service architecture shape</span>
+      <span class="badge conf">Confidence 84%</span>
+      <span class="badge">Complexity Medium</span>
+    </div>
+    <p class="field">Ship 2–3 classic 3-layer Boot apps named by <em>factory stress axis</em>, not ecommerce domain: e.g. rich nested DTOs + validation, Bearer auth + mutating tools (KTD8), and a deliberate springdoc gap (KD7 floor). Prefer in-memory repositories and fixed localhost ports — no Eureka/Config/MySQL. The workspace is a calibration set the factory measures against.</p>
+    <p class="field-label">Basis</p>
+    <p class="field basis"><code>direct:</code> experiment ladder Tier E; plan “fixture before multi-service”; grounding prefers 2–3 sync REST over Petclinic mesh. <code>reasoned:</code> metrology gauge blocks / pharmacopeia reference standards — specimens exist to validate the assay (the factory), not to be product apps.</p>
+    <p class="field-label">Rationale</p>
+    <p class="field">A single Spring demo only proves “it boots.” A graded farm proves the failure modes the factory claims to handle (Zod richness, mutation fail-closed, MCP coverage floor).</p>
+    <p class="field-label">Downsides</p>
+    <p class="field">Less impressive as a “microservices showcase”; stakeholders may push for domain sagas prematurely.</p>
+  </article>
+
+  <article class="idea" id="idea-3">
+    <h3>3. Parent-owned contracts, submodule-only Java sources</h3>
+    <div class="badges">
+      <span class="badge axis">Workspace and git submodule topology</span>
+      <span class="badge conf">Confidence 86%</span>
+      <span class="badge">Complexity Medium</span>
+    </div>
+    <p class="field">Create a thin workflow/workspace superproject whose <code>.gitmodules</code> pins the archetype plus each target service. The parent owns all factory-facing artifacts (<code>contracts/&lt;service&gt;/</code>, support YAML, port map). Submodules own only <code>src/</code> and their export CI. Adding a service = pin submodule + drop manifest — not nested contract hunting.</p>
+    <p class="field-label">Basis</p>
+    <p class="field basis"><code>direct:</code> zero <code>.gitmodules</code> today; multi-service is already <code>contracts/&lt;service&gt;/</code> + <code>generated/&lt;service&gt;/</code>; <code>compileService</code> resolves manifests under the factory repo root. <code>reasoned:</code> BioBricks-style chassis + accessioned parts — standard scars, independent pins.</p>
+    <p class="field-label">Rationale</p>
+    <p class="field">Honors the user’s git-submodule requirement while keeping the factory’s existing contract layout as the single handoff surface.</p>
+    <p class="field-label">Downsides</p>
+    <p class="field">Submodule UX (detached HEAD, two-step push) remains; needs clear onboard docs/script.</p>
+    <svg class="diagram" viewBox="0 0 640 200" role="img" aria-label="Workspace parent with submodule services and contracts">
+      <rect x="40" y="20" width="560" height="160" rx="10" fill="#fffdf9" stroke="#0b6e4f"/>
+      <text x="60" y="48" font-size="14" font-weight="600" fill="#0b6e4f">workspace superproject</text>
+      <rect x="60" y="70" width="160" height="80" rx="6" fill="#e3f2eb" stroke="#0b6e4f"/>
+      <text x="140" y="105" text-anchor="middle" font-size="12">contracts/</text>
+      <text x="140" y="123" text-anchor="middle" font-size="11" fill="#5c564c">manifests + lockfiles</text>
+      <rect x="250" y="70" width="150" height="80" rx="6" fill="#efeae1" stroke="#d9d2c5"/>
+      <text x="325" y="100" text-anchor="middle" font-size="12">submodules/</text>
+      <text x="325" y="118" text-anchor="middle" font-size="11" fill="#5c564c">Java only</text>
+      <text x="325" y="134" text-anchor="middle" font-size="11" fill="#5c564c">pinned SHAs</text>
+      <rect x="430" y="70" width="150" height="80" rx="6" fill="#e8eef8" stroke="#d9d2c5"/>
+      <text x="505" y="105" text-anchor="middle" font-size="12">boot / ports</text>
+      <text x="505" y="123" text-anchor="middle" font-size="11" fill="#5c564c">CI session</text>
+    </svg>
+  </article>
+
+  <article class="idea" id="idea-4">
+    <h3>4. Springdoc export → digested lockfile conveyor</h3>
+    <div class="badges">
+      <span class="badge axis">Contract handoff to factory</span>
+      <span class="badge conf">Confidence 90%</span>
+      <span class="badge">Complexity Medium</span>
+    </div>
+    <p class="field">Each Spring submodule CI exports <code>/v3/api-docs</code> to a known artifact path. A workspace sync step copies into <code>contracts/&lt;service&gt;/openapi.yaml</code>, runs <code>derive-mcp-from-openapi.mjs</code>, and records digests per KTD15. Propose/compile never scrapes live OpenAPI — matching v1’s hard lockfile-only ingest.</p>
+    <p class="field-label">Basis</p>
+    <p class="field basis"><code>direct:</code> <code>src/ingest/openapi.ts</code> throws on <code>mode=fetch</code>; plan KTD2 (exported OpenAPI primary) and KTD15 (digest/URI in PR body); derive-mcp script already exists for operationId bridges.</p>
+    <p class="field-label">Rationale</p>
+    <p class="field">Owning Spring only pays off if OpenAPI arrives the way the factory already compiles. Manual curl-and-commit across N submodules is the recurring operator tax.</p>
+    <p class="field-label">Downsides</p>
+    <p class="field">Two-repo choreography until automation exists; stale lockfiles if sync is skipped (mitigate later with a gate, but don’t block v1 on that).</p>
+  </article>
+
+  <article class="idea" id="idea-5">
+    <h3>5. Dual-lane Spring truth source + generic MCP client</h3>
+    <div class="badges">
+      <span class="badge axis">Dual-lane MCP surface</span>
+      <span class="badge conf">Confidence 82%</span>
+      <span class="badge">Complexity High</span>
+    </div>
+    <p class="field">Each target Boot app exposes classic REST <em>and</em> an in-process HTTP MCP endpoint (mirror <code>fixtures/demo-service</code>’s same-port <code>/mcp</code>), dispatching to the same <code>@Service</code> methods — optionally factored as a shared starter submodule. In the factory, replace <code>callMcpTool</code>’s demo/jsonplaceholder hardcodes with manifest-driven / <code>xFactoryHttp</code> dispatch so onboarding a third Spring service is not a TypeScript change.</p>
+    <p class="field-label">Basis</p>
+    <p class="field basis"><code>direct:</code> demo fixture co-locates HTTP + <code>/mcp</code>; <code>mcpClient.ts</code> throws <code>unknown MCP service</code> for anything else; Tier E names thin MCP adapter; grounding notes Spring AI MCP samples are not REST+OpenAPI dual-lane. <code>external:</code> openapi-to-mcp / derive-mcp naming strategy already used for jsonplaceholder.</p>
+    <p class="field-label">Rationale</p>
+    <p class="field">Closes the public prior-art gap and makes owned Spring the dual-lane truth source the product assumes — without a second process per service.</p>
+    <p class="field-label">Downsides</p>
+    <p class="field">Custom <code>/mcp</code> is not full Spring AI MCP protocol; must stay compatible with the factory’s client expectations. Higher implementation burden than derive-only bridge tests.</p>
+  </article>
+
+  <article class="idea" id="idea-6">
+    <h3>6. Deliberate drift sibling pair (KD7 teaching target)</h3>
+    <div class="badges">
+      <span class="badge axis">Dual-lane MCP surface</span>
+      <span class="badge conf">Confidence 80%</span>
+      <span class="badge">Complexity Low</span>
+    </div>
+    <p class="field">From the same archetype, ship two pins: one with full springdoc enrichment, and one that omits/partials OpenAPI so propose PRs show <code>spring-missing</code> WARN while MCP coverage floor still emits. Treat intentional drift as a first-class specimen, not an accident.</p>
+    <p class="field-label">Basis</p>
+    <p class="field basis"><code>direct:</code> inventory merge emits <code>spring-missing</code> drift and continues; strategy MCP coverage floor when Spring detail is missing; R6/KD7 dual-lane success criteria.</p>
+    <p class="field-label">Rationale</p>
+    <p class="field">Owning Spring lets you <em>manufacture</em> the failure class the factory claims to handle — before real domain services hide mapping gaps.</p>
+    <p class="field-label">Downsides</p>
+    <p class="field">Easy to misread as a broken service in CI dashboards; needs clear naming and docs.</p>
+  </article>
+</section>
+
+<section id="rejection-summary">
+  <h2>Rejection Summary</h2>
+  <p>~40 raw ideas across 5 frames → ~12 shortlist clusters → 6 survivors after basis verification. Axis coverage: all five axes represented in the raw set; survivors span architecture, topology, handoff, and dual-lane (local/CI boot demoted from over-spec’d “port registry” into follow-on work under ideas 3–5).</p>
+  <table class="reject">
+    <thead><tr><th>Cut</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td>Port registry + egress auto-patch</td><td>Weak basis — over-specs beyond documented PID/sleep fragility; use health-wait + manifest ports first</td></tr>
+      <tr><td>Submodule SHA ↔ digest hard gate</td><td>KTD15 records digests; “fail before emit” overstates current/planned behavior</td></tr>
+      <tr><td>Mutation-lab + @Tag export gate</td><td>Mutation-lab deferred; @Tag filtering uncited in factory/plan</td></tr>
+      <tr><td>Pharmacopeia meta-bundle (X1 as product)</td><td>No unique basis beyond summing survivors — execute components</td></tr>
+      <tr><td>Full bump→propose automation loop</td><td>Premature; manual onboard + KTD9 propose first</td></tr>
+      <tr><td>Derive-only MCP (delete adapter)</td><td>Weaker Tier E proof than same-process dual-lane</td></tr>
+      <tr><td>Ecommerce saga triad as primary shape</td><td>Domain mesh less aligned with factory experiment intent than gauge farm</td></tr>
+      <tr><td>Relative lockfile paths into build/</td><td>Conflicts with committed <code>contracts/</code> lockfile convention</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer class="composition-signal">
+  Composed 2026-09-07 by ce-ideate (run <code>b4cdcc59</code>) from focus: factory experiment Spring 3-layer multi-service git-submodule workspace using <code>asub927/spring-service</code>, grounded in <code>api-automation-factory</code> STRATEGY / experiment research / contract ingest evidence. Basis verifier: generation-tier subagent. Independence note: service-architecture evidence dossier was filled in-thread after a hung scout (substitution disclosed in grounding).
+</footer>
+</main>
+</body>
+</html>
